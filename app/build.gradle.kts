@@ -72,6 +72,9 @@ android {
         generateLocaleConfig = true
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {

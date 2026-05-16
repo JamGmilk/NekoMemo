@@ -18,6 +18,7 @@ import javax.inject.Inject
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import mirujam.nekomemo.R
+import mirujam.nekomemo.util.FileNameSanitizer
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
@@ -120,7 +121,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             val json = bankExportImportUseCase.exportBankToJson(bank.id)
             _exportJson.value = json
-            _exportFileName.value = "${bank.title.replace(" ", "_")}.nekomemo.json"
+            _exportFileName.value = "${FileNameSanitizer.sanitize(bank.title)}.nekomemo.json"
         }
     }
 

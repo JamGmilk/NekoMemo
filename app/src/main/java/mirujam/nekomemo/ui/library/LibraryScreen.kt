@@ -171,21 +171,21 @@ fun LibraryScreen(
         DialogWithIcon(
             onDismiss = { viewModel.dismissDeleteConfirmDialog() },
             icon = Icons.Outlined.DeleteOutline,
-            title = "Delete Bank?",
+            title = stringResource(R.string.library_delete_title),
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.confirmDeleteBank() },
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.library_delete_confirm), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissDeleteConfirmDialog() }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
             content = {
-                Text("This will permanently delete this bank and all its questions. This action cannot be undone.")
+                Text(stringResource(R.string.library_delete_message))
             }
         )
     }
@@ -445,7 +445,7 @@ private fun QuestionBankCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "$questionCount questions",
+                        text = stringResource(R.string.library_questions_count, questionCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
