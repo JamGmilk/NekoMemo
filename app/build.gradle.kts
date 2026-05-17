@@ -14,6 +14,14 @@ val localProperties = Properties().apply {
     }
 }
 
+val releaseStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")
+    ?.takeIf { it.isNotBlank() }
+    ?.let { rootProject.file(it) }
+val hasReleaseSigningConfig = releaseStoreFile?.exists() == true &&
+    !localProperties.getProperty("RELEASE_STORE_PASSWORD").isNullOrBlank() &&
+    !localProperties.getProperty("RELEASE_KEY_ALIAS").isNullOrBlank() &&
+    !localProperties.getProperty("RELEASE_KEY_PASSWORD").isNullOrBlank()
+
 android {
     namespace = "mirujam.nekomemo"
     compileSdk = 37
@@ -30,9 +38,8 @@ android {
 
     signingConfigs {
         create("release") {
-            val path = localProperties.getProperty("RELEASE_STORE_FILE")
-            if (path != null) {
-                storeFile = file(path)
+            if (hasReleaseSigningConfig) {
+                storeFile = releaseStoreFile
                 storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
                 keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
                 keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
@@ -42,7 +49,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigningConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -52,7 +63,7 @@ android {
         }
 
         debug {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("debug")
         }
 
     }
@@ -72,6 +83,9 @@ android {
         generateLocaleConfig = true
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {

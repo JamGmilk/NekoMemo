@@ -17,6 +17,7 @@ import mirujam.nekomemo.data.local.entity.QuestionEntity
 import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.domain.usecase.BankExportImportUseCase
 import mirujam.nekomemo.ui.model.CachedQuestion
+import mirujam.nekomemo.util.FileNameSanitizer
 import javax.inject.Inject
 
 @HiltViewModel
@@ -138,7 +139,7 @@ class BankDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val json = bankExportImportUseCase.exportBankToJson(bankId)
             _exportJson.value = json
-            _exportFileName.value = "${_bankTitle.value.replace(" ", "_")}.nekomemo.json"
+            _exportFileName.value = "${FileNameSanitizer.sanitize(_bankTitle.value)}.nekomemo.json"
         }
     }
 

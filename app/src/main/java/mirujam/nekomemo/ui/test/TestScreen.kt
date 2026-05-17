@@ -450,7 +450,7 @@ private fun ScoreSummary(
                                 color = MaterialTheme.colorScheme.error
                             )
                             Text(
-                                text = "Wrong",
+                                text = stringResource(R.string.test_wrong),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -477,7 +477,7 @@ private fun ScoreSummary(
                                 color = MaterialTheme.colorScheme.tertiary
                             )
                             Text(
-                                text = "Skipped",
+                                text = stringResource(R.string.test_skipped),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -500,7 +500,7 @@ private fun ScoreSummary(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Review Answers")
+            Text(stringResource(R.string.test_review_answers))
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -516,7 +516,7 @@ private fun ScoreSummary(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Retake Test")
+            Text(stringResource(R.string.test_retake))
         }
     }
 }

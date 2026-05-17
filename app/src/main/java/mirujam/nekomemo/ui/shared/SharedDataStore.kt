@@ -217,7 +217,7 @@ class SharedDataStore @Inject constructor(
 
     private fun restoreFromBackup() {
         try {
-            if (backupFile.exists() && dataFile.exists()) {
+            if (backupFile.exists()) {
                 backupFile.copyTo(dataFile, overwrite = true)
                 Log.d(TAG, "Restored from backup after error")
             }
