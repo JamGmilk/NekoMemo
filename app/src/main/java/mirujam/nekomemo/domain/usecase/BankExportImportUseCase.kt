@@ -69,7 +69,11 @@ class BankExportImportUseCase @Inject constructor(
 
         val bankJson = wrapper.optJSONObject("nekomemo") ?: wrapper
 
-        val title = DataValidator.validateTitle(bankJson.optString("title", "Imported Bank"))
+        val title = DataValidator.validateTitle(
+            bankJson.optString("title").ifBlank {
+                bankJson.optString("name", "Imported Bank")
+            }
+        )
         val category = DataValidator.validateCategory(bankJson.optString("category", "General"))
 
         if (title.isBlank()) {
@@ -125,7 +129,9 @@ class BankExportImportUseCase @Inject constructor(
     }
 
     private fun validateAndCreateQuestion(qJson: JSONObject, bankId: Long, index: Int): QuestionEntity? {
-        val rawText = qJson.optString("text", "")
+        val rawText = qJson.optString("text").ifBlank {
+            qJson.optString("content", "")
+        }
         val text = DataValidator.sanitizeString(rawText, DataValidator.MAX_TEXT_LENGTH, "")
 
         if (text.isBlank()) {

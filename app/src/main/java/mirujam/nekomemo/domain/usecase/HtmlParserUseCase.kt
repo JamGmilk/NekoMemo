@@ -2,6 +2,7 @@ package mirujam.nekomemo.domain.usecase
 
 import mirujam.nekomemo.data.model.ExtractedQuestion
 import mirujam.nekomemo.data.model.ExtractedQuestionBank
+import mirujam.nekomemo.domain.validator.DataValidator
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import android.util.Log
@@ -52,7 +53,7 @@ object HtmlParserUseCase {
                     continue
                 }
 
-                val content = parseQuestionContent(div).take(100)
+                val content = DataValidator.sanitizeContent(parseQuestionContent(div))
                 val options = parseOptions(div)
                 val correctAnswer = parseCorrectAnswer(div)
                 val correctIndex = letterToIndex(correctAnswer)
@@ -159,7 +160,7 @@ object HtmlParserUseCase {
     private fun parseCorrectAnswer(div: org.jsoup.nodes.Element): String {
         val correctSpan = div.select("span.rightAnswerContent").first()
         if (correctSpan != null) {
-            return correctSpan.text().trim()
+            return normalizeAnswerLetter(correctSpan.text())
         }
 
         val greenSpan = div.select("span.colorGreen").first()
@@ -167,15 +168,19 @@ object HtmlParserUseCase {
             val text = greenSpan.text().trim()
             val match = CORRECT_ANSWER_REGEX.find(text)
             if (match != null) {
-                return match.groupValues[1].uppercase()
+                return normalizeAnswerLetter(match.groupValues[1])
             }
             val letterMatch = LETTER_REGEX.find(text)
             if (letterMatch != null) {
-                return letterMatch.value.uppercase()
+                return normalizeAnswerLetter(letterMatch.value)
             }
         }
 
         return ""
+    }
+
+    private fun normalizeAnswerLetter(answer: String): String {
+        return LETTER_REGEX.find(answer)?.value?.uppercase().orEmpty()
     }
 
     private fun letterToIndex(letter: String): Int {
