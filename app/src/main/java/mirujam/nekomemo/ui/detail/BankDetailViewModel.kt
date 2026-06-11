@@ -125,6 +125,18 @@ class BankDetailViewModel @Inject constructor(
         }
     }
 
+    fun deleteQuestion(question: QuestionUiModel) {
+        pendingDeleteQuestion = Question(
+            id = question.id,
+            questionBankId = bankId,
+            text = question.text,
+            options = question.options,
+            correctIndices = question.correctIndices,
+            type = question.type
+        )
+        _showDeleteConfirmDialog.value = true
+    }
+
     fun confirmDeleteQuestion() {
         val question = pendingDeleteQuestion ?: return
         viewModelScope.launch {

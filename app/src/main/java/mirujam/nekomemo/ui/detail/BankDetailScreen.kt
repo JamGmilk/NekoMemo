@@ -378,6 +378,10 @@ fun BankDetailScreen(
                     item { Spacer(modifier = Modifier.height(8.dp)) }
 
                     item {
+                        val categoryName = categories.find { it.id == bankCategoryId }?.name ?: ""
+                        val displayName = if (categoryName == CategoryRepository.DEFAULT_CATEGORY_NAME) {
+                            stringResource(R.string.category_general_display)
+                        } else categoryName
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = AppShapes.large,
@@ -386,10 +390,6 @@ fun BankDetailScreen(
                             )
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                val categoryName = categories.find { it.id == bankCategoryId }?.name ?: ""
-                                val displayName = if (categoryName == CategoryRepository.DEFAULT_CATEGORY_NAME) {
-                                    stringResource(R.string.category_general_display)
-                                } else categoryName
                                 Text(
                                     text = displayName,
                                     style = MaterialTheme.typography.labelMedium,
@@ -414,18 +414,16 @@ fun BankDetailScreen(
                             val question = pagingItems[index] ?: return@items
                             QuestionCard(
                                 question = question,
-                                optionList = question.options,
                                 onEdit = { viewModel.showEditQuestionDialog(question.id) },
-                                onDelete = { viewModel.deleteQuestion(question.id) }
+                                onDelete = { viewModel.deleteQuestion(question) }
                             )
                         }
                     } else {
                         items(filteredQuestions, key = { it.id }, contentType = { "question" }) { question ->
                             QuestionCard(
                                 question = question,
-                                optionList = question.options,
                                 onEdit = { viewModel.showEditQuestionDialog(question.id) },
-                                onDelete = { viewModel.deleteQuestion(question.id) }
+                                onDelete = { viewModel.deleteQuestion(question) }
                             )
                         }
                     }
@@ -457,7 +455,6 @@ fun BankDetailScreen(
 @Composable
 private fun QuestionCard(
     question: QuestionUiModel,
-    optionList: List<String>,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -543,7 +540,7 @@ private fun QuestionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             val isFillBlank = question.type == QuestionType.FILL_BLANK
-            optionList.forEachIndexed { index, option ->
+            question.options.forEachIndexed { index, option ->
                 val isCorrect = index in question.correctIndices
                 Row(
                     modifier = Modifier
