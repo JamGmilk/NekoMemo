@@ -15,14 +15,22 @@ enum class QuestionType(val code: Int) {
 
         /**
          * 从旧版字符串 type 解析，用于迁移和导入兼容
+         * 支持两种格式：
+         * - 枚举 name: "SINGLE_CHOICE", "MULTIPLE_CHOICE", "FILL_BLANK" 等
+         * - 旧字符串: "Single Choice", "Multiple Choice", "Fill in the Blank" 等
          */
-        fun fromLegacyString(value: String): QuestionType = when {
-            value.contains("Single Choice", ignoreCase = true) -> SINGLE_CHOICE
-            value.contains("Multiple Choice", ignoreCase = true) -> MULTIPLE_CHOICE
-            value.contains("True/False", ignoreCase = true) -> TRUE_FALSE
-            value.contains("Fill in the Blank", ignoreCase = true) -> FILL_BLANK
-            value.contains("Short Answer", ignoreCase = true) -> SHORT_ANSWER
-            else -> SINGLE_CHOICE
+        fun fromLegacyString(value: String): QuestionType {
+            // 先尝试匹配枚举 name
+            entries.find { it.name == value }?.let { return it }
+            // 再尝试匹配旧字符串格式
+            return when {
+                value.contains("Single Choice", ignoreCase = true) -> SINGLE_CHOICE
+                value.contains("Multiple Choice", ignoreCase = true) -> MULTIPLE_CHOICE
+                value.contains("True/False", ignoreCase = true) -> TRUE_FALSE
+                value.contains("Fill in the Blank", ignoreCase = true) -> FILL_BLANK
+                value.contains("Short Answer", ignoreCase = true) -> SHORT_ANSWER
+                else -> SINGLE_CHOICE
+            }
         }
     }
 }
