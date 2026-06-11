@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "bc1c5d484f3a2413ba98f1adcad2e54f",
+    "identityHash": "a4f4ef0698df8b97b07933474ffd96fa",
     "entities": [
       {
         "tableName": "question_banks",
@@ -75,7 +75,7 @@
       },
       {
         "tableName": "questions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `questionBankId` INTEGER NOT NULL, `text` TEXT NOT NULL, `options` TEXT NOT NULL, `correctIndices` TEXT NOT NULL, FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `questionBankId` INTEGER NOT NULL, `text` TEXT NOT NULL, `options` TEXT NOT NULL, `correctIndices` TEXT NOT NULL, `type` INTEGER NOT NULL, FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -105,6 +105,12 @@
             "fieldPath": "correctIndices",
             "columnName": "correctIndices",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -177,7 +183,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bc1c5d484f3a2413ba98f1adcad2e54f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a4f4ef0698df8b97b07933474ffd96fa')"
     ]
   }
 }
