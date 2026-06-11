@@ -545,20 +545,22 @@ private fun QuestionCard(
                         .padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isCorrect) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    } else if (!isFillBlank) {
-                        Icon(
-                            imageVector = Icons.Outlined.Cancel,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.outlineVariant
-                        )
+                    if (!isFillBlank) {
+                        if (isCorrect) {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.Cancel,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.outlineVariant
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     val prefix = if (isFillBlank) "(${index + 1})" else ('A' + index).toString() + "."
@@ -785,7 +787,7 @@ private fun QuestionEditDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
