@@ -112,15 +112,7 @@ fun NekoMemoNavigation(
                 navArgument("shuffleOptions") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
-            val bankId = backStackEntry.arguments?.getLong("bankId") ?: return@composable
-            val questionCount = backStackEntry.arguments?.getInt("questionCount") ?: return@composable
-            val shuffleQuestions = backStackEntry.arguments?.getBoolean("shuffleQuestions") ?: false
-            val shuffleOptions = backStackEntry.arguments?.getBoolean("shuffleOptions") ?: false
             TestScreen(
-                bankId = bankId,
-                questionCount = questionCount,
-                shuffleQuestions = shuffleQuestions,
-                shuffleOptions = shuffleOptions,
                 onBack = { navController.popBackStack() }
             )
         }

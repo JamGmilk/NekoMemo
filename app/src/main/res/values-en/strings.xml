@@ -155,8 +155,8 @@
     <string name="settings_clear_db_success">Database cleared</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_test_settings">Test Settings</string>
-    <string name="settings_direct_answer">Direct Answer</string>
-    <string name="settings_direct_answer_desc">Check the answer immediately when an option is clicked.</string>
+    <string name="settings_direct_answer">Instant Grading (Single Choice)</string>
+    <string name="settings_direct_answer_desc">Check the answer immediately when a single choice option is clicked.</string>
     <string name="settings_statistics">Statistics</string>
     <string name="settings_banks">Banks</string>
     <string name="settings_questions">Questions</string>

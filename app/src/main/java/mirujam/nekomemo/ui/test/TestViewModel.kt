@@ -129,7 +129,7 @@ class TestViewModel @Inject constructor(
             }
             map.toMutableMap().apply { this[questionIndex] = newSet }
         }
-        if (shouldReveal) {
+        if (shouldReveal && isSingleChoice) {
             revealAnswer(questionIndex)
         }
     }

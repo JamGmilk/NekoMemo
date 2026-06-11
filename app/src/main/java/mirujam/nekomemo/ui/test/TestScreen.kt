@@ -61,10 +61,6 @@ import mirujam.nekomemo.ui.theme.ProgressIndicatorShapes
 
 @Composable
 fun TestScreen(
-    bankId: Long,
-    questionCount: Int,
-    shuffleQuestions: Boolean = false,
-    shuffleOptions: Boolean = false,
     onBack: () -> Unit,
     viewModel: TestViewModel = hiltViewModel()
 ) {
@@ -329,7 +325,7 @@ fun TestScreen(
                                                 viewModel.toggleAnswer(currentIndex, optionIndex, isSingleChoice)
                                             }
                                         }
-                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                        .padding(horizontal = 16.dp, vertical = 18.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     if (!isSingleChoice) {
@@ -338,33 +334,35 @@ fun TestScreen(
                                             onCheckedChange = null,
                                             modifier = Modifier.size(24.dp)
                                         )
+                                        Spacer(modifier = Modifier.width(8.dp))
                                     }
-                                    Spacer(modifier = Modifier.width(12.dp))
                                     val optionLetter = ('A' + optionIndex).toString()
                                     Text(
                                         text = "$optionLetter. $option",
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    Box(
-                                        modifier = Modifier.size(24.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (showResult) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.CheckCircle,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                        if (showWrong) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Cancel,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
+                                    if (isRevealed) {
+                                        Box(
+                                            modifier = Modifier.size(24.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (showResult) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.CheckCircle,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            if (showWrong) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Cancel,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -373,7 +371,9 @@ fun TestScreen(
                             }
                         }
 
-                        if (!isFillBlank && !isRevealed && selectedSet.isNotEmpty() && !directAnswer) {
+                        val showCheckButton = !isFillBlank && !isRevealed && selectedSet.isNotEmpty() &&
+                            (!directAnswer || !isSingleChoice)
+                        if (showCheckButton) {
                             Button(
                                 onClick = { viewModel.revealAnswer(currentIndex) },
                                 modifier = Modifier.fillMaxWidth(),

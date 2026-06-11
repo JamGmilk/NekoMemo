@@ -145,8 +145,8 @@
     <string name="settings_clear_db_success">数据库已清空</string>
     <string name="settings_appearance">外观</string>
     <string name="settings_test_settings">测试</string>
-    <string name="settings_direct_answer">即时判题</string>
-    <string name="settings_direct_answer_desc">点击选项后立即检查答案</string>
+    <string name="settings_direct_answer">单选题即时判题</string>
+    <string name="settings_direct_answer_desc">点击选项后立即检查单选题答案</string>
     <string name="settings_statistics">统计</string>
     <string name="settings_banks">题库数量</string>
     <string name="settings_questions">题目总量</string>
