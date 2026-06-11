@@ -36,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,12 +52,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
+import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
 import mirujam.nekomemo.ui.theme.ProgressIndicatorShapes
-import mirujam.nekomemo.domain.model.QuestionType
 
 @Composable
 fun TestScreen(
@@ -333,13 +332,7 @@ fun TestScreen(
                                         .padding(horizontal = 16.dp, vertical = 14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if (isSingleChoice) {
-                                        RadioButton(
-                                            selected = isSelected,
-                                            onClick = null,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    } else {
+                                    if (!isSingleChoice) {
                                         Checkbox(
                                             checked = isSelected,
                                             onCheckedChange = null,
