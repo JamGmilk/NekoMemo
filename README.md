@@ -4,16 +4,18 @@ NekoMemo 是一款背题软件，可从学习通网页提取题库，帮助背�
 
 ## 功能特性
 
-- **网页提取 (Fetcher)**：从学习通网页中解析并提取题库
-- **题库管理**：组织并管理多个题库
-- **练习模式**：简洁的界面，支持测试全部或部分题目，支持打乱题目或选项
+- **网页解析**：从学习通网页中解析并提取题库
+- **题库管理**：多题库管理，支持单选题、单选题、填空题
+- **练习模式**：支持测试全部或部分题目，支持打乱题目或选项
+- **分类标签**
 - **导入/导出**：备份题库或与他人分享
 - **Material 3**
 
 ## 截图
 
-![Screenshot 1](screenshots/Screenshot_1.jpg) ![Screenshot 2](screenshots/Screenshot_2.jpg)
-![Screenshot 3](screenshots/Screenshot_3.jpg) ![Screenshot 4](screenshots/Screenshot_4.jpg)
+![Screenshot 1](screenshots/1.jpg) ![Screenshot 2](screenshots/2.jpg)
+![Screenshot 3](screenshots/3.jpg) ![Screenshot 4](screenshots/4.jpg)
+![Screenshot 5](screenshots/5.jpg)
 
 ## 使用说明
 
