@@ -8,14 +8,16 @@ data class QuestionUiModel(
     val id: Long,
     val text: String,
     val options: List<String>,
-    val correctIndices: List<Int>
+    val correctIndices: List<Int>,
+    val type: String
 ) {
     companion object {
         fun fromDomainModel(question: Question): QuestionUiModel = QuestionUiModel(
             id = question.id,
             text = question.text,
             options = question.options,
-            correctIndices = question.correctIndices
+            correctIndices = question.correctIndices,
+            type = question.type
         )
 
         fun fromDomainModels(questions: List<Question>): List<QuestionUiModel> =

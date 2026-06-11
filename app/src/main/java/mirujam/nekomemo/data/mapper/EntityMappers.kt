@@ -26,7 +26,8 @@ fun QuestionEntity.toDomainModel(): Question = Question(
     questionBankId = questionBankId,
     text = text,
     options = ListJsonConverter.toStringList(options),
-    correctIndices = IntListJsonConverter.toIntList(correctIndices)
+    correctIndices = IntListJsonConverter.toIntList(correctIndices),
+    type = type
 )
 
 fun Question.toEntity(): QuestionEntity = QuestionEntity(
@@ -34,7 +35,8 @@ fun Question.toEntity(): QuestionEntity = QuestionEntity(
     questionBankId = questionBankId,
     text = text,
     options = ListJsonConverter.fromStringList(options),
-    correctIndices = IntListJsonConverter.fromIntList(correctIndices)
+    correctIndices = IntListJsonConverter.fromIntList(correctIndices),
+    type = type
 )
 
 fun List<QuestionBankEntity>.toDomainBankModels(): List<QuestionBank> = map { it.toDomainModel() }

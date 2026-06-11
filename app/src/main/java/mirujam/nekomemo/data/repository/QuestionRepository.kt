@@ -80,14 +80,15 @@ class QuestionRepository @Inject constructor(
         }
     }
 
-    suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>) {
+    suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: String) {
         questionDao.updateQuestion(
             QuestionEntity(
                 id = id,
                 questionBankId = questionBankId,
                 text = text,
                 options = ListJsonConverter.fromStringList(options),
-                correctIndices = mirujam.nekomemo.data.local.IntListJsonConverter.fromIntList(correctIndices)
+                correctIndices = mirujam.nekomemo.data.local.IntListJsonConverter.fromIntList(correctIndices),
+                type = type
             )
         )
     }

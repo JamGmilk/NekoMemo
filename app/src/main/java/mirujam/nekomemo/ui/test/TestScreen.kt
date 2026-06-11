@@ -170,19 +170,48 @@ fun TestScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = stringResource(R.string.test_question_progress, currentIndex + 1, questions.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (currentIndex in questions.indices) {
+                    val question = questions[currentIndex]
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Card(
+                        shape = AppShapes.extraSmall,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        val localizedType = when (question.type) {
+                            "Single Choice" -> stringResource(R.string.question_type_single)
+                            "Multiple Choice" -> stringResource(R.string.question_type_multiple)
+                            "True/False" -> stringResource(R.string.question_type_true_false)
+                            "Fill in the Blank" -> stringResource(R.string.question_type_fill_blank)
+                            "Short Answer" -> stringResource(R.string.question_type_short_answer)
+                            else -> question.type.ifBlank { stringResource(R.string.question_type_unknown) }
+                        }
+                        Text(
+                            text = localizedType,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Text(
+                        text = stringResource(R.string.test_question_progress, currentIndex + 1, questions.size),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (currentIndex in questions.indices) {
-                    val question = questions[currentIndex]
                     val selectedSet = selectedAnswers[currentIndex] ?: emptySet()
                     val isRevealed = isReviewMode || currentIndex in revealedQuestions
-                    val isMultipleChoice = question.correctIndices.size > 1
 
                 Card(
                     modifier = Modifier

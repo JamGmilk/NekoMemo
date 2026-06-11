@@ -83,7 +83,8 @@ class ExtractViewModel @Inject constructor(
                         questionBankId = bankId,
                         text = q.content,
                         options = q.options,
-                        correctIndices = q.correctIndices
+                        correctIndices = q.correctIndices,
+                        type = q.type
                     )
                 }
                 repository.insertQuestions(questions)

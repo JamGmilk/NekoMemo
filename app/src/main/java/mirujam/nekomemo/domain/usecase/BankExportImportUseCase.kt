@@ -37,6 +37,7 @@ class BankExportImportUseCase @Inject constructor(
             qJson.put("text", q.text)
             qJson.put("options", JSONArray(q.options))
             qJson.put("correctIndices", JSONArray(q.correctIndices))
+            qJson.put("type", q.type)
             questionsArray.put(qJson)
         }
         json.put("questions", questionsArray)
@@ -159,7 +160,8 @@ class BankExportImportUseCase @Inject constructor(
             questionBankId = bankId,
             text = text,
             options = options,
-            correctIndices = correctIndices
+            correctIndices = correctIndices,
+            type = qJson.optString("type", "Single Choice").ifBlank { "Single Choice" }
         )
     }
 

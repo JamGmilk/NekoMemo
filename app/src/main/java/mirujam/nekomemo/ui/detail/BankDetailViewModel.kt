@@ -208,7 +208,8 @@ class BankDetailViewModel @Inject constructor(
                 questionBankId = bankId,
                 text = text,
                 options = options,
-                correctIndices = correctIndices
+                correctIndices = correctIndices,
+                type = "Single Choice"
             )
             repository.insertQuestions(listOf(question))
             _showAddQuestionDialog.value = false
@@ -228,10 +229,10 @@ class BankDetailViewModel @Inject constructor(
         _editingQuestion.value = null
     }
 
-    fun updateQuestion(questionId: Long, text: String, options: List<String>, correctIndices: List<Int>) {
+    fun updateQuestion(questionId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: String) {
         viewModelScope.launch {
             try {
-                repository.updateQuestion(questionId, bankId, text, options, correctIndices)
+                repository.updateQuestion(questionId, bankId, text, options, correctIndices, type)
                 _editingQuestionId.value = null
                 _editingQuestion.value = null
             } catch (e: Exception) {

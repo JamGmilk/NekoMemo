@@ -187,7 +187,7 @@ fun BankDetailScreen(
             initialCorrectIndices = q.correctIndices,
             onDismiss = { viewModel.dismissEditQuestionDialog() },
             onConfirm = { text, options, correctIndices ->
-                viewModel.updateQuestion(q.id, text, options, correctIndices)
+                viewModel.updateQuestion(q.id, text, options, correctIndices, q.type)
             }
         )
     }
