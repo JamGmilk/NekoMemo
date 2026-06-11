@@ -2,10 +2,12 @@ package mirujam.nekomemo.ui.detail
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import timber.log.Timber
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +47,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -77,6 +82,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import mirujam.nekomemo.R
 import mirujam.nekomemo.data.repository.CategoryRepository
+import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
 import mirujam.nekomemo.ui.component.EditBankDialog
@@ -84,7 +90,7 @@ import mirujam.nekomemo.ui.component.LocalSnackbarHostState
 import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
-import mirujam.nekomemo.domain.model.QuestionType
+import timber.log.Timber
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -754,40 +760,29 @@ private fun QuestionEditDialog(
         title = title,
         confirmText = stringResource(R.string.common_save),
         onConfirm = {
-            onConfirm(questionText, options.filter { it.isNotBlank() }, correctIndices.toList(), selectedType)
+            // 过滤空选项，并修正 correctIndices 的索引偏移
+            val nonEmptyOptions = options.mapIndexedNotNull { index, option ->
+                if (option.isNotBlank()) index to option else null
+            }
+            val indexMapping = nonEmptyOptions.map { it.first }.withIndex()
+                .associate { it.value to it.index }
+            val adjustedIndices = correctIndices.mapNotNull { indexMapping[it] }
+            onConfirm(questionText, nonEmptyOptions.map { it.second }, adjustedIndices, selectedType)
         },
         confirmEnabled = questionText.isNotBlank() && options.any { it.isNotBlank() } && correctIndices.isNotEmpty(),
         dismissText = stringResource(R.string.common_cancel),
         content = {
             // 类型选择
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                typeOptions.forEach { (value, label) ->
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedType = value },
-                        shape = AppShapes.extraSmall,
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (selectedType == value)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else
-                                MaterialTheme.colorScheme.surfaceVariant
-                        )
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                typeOptions.forEachIndexed { index, (value, label) ->
+                    SegmentedButton(
+                        selected = selectedType == value,
+                        onClick = { selectedType = value },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = typeOptions.size),
                     ) {
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (selectedType == value)
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
-                            textAlign = TextAlign.Center
+                            style = MaterialTheme.typography.labelMedium
                         )
                     }
                 }
@@ -817,41 +812,42 @@ private fun QuestionEditDialog(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (isFillBlank) {
-                            Checkbox(
-                                checked = true,
-                                onCheckedChange = null,
-                                enabled = false,
-                                modifier = Modifier.padding(end = 4.dp)
-                            )
-                        } else if (isSingleChoice) {
-                            Checkbox(
-                                checked = isChecked,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        correctIndices.clear()
-                                        correctIndices.add(index)
-                                    }
-                                },
-                                modifier = Modifier.padding(end = 4.dp)
-                            )
-                        } else {
-                            Checkbox(
-                                checked = isChecked,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        correctIndices.add(index)
-                                    } else {
-                                        correctIndices.remove(index)
-                                    }
-                                },
-                                modifier = Modifier.padding(end = 4.dp)
-                            )
+                        AnimatedVisibility(
+                            visible = !isFillBlank,
+                            enter = expandHorizontally(),
+                            exit = shrinkHorizontally()
+                        ) {
+                            Crossfade(targetState = isSingleChoice to isChecked, label = "selectControl") { (single, checked) ->
+                                if (single) {
+                                    RadioButton(
+                                        selected = checked,
+                                        onClick = {
+                                            correctIndices.clear()
+                                            correctIndices.add(index)
+                                        },
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                } else {
+                                    Checkbox(
+                                        checked = checked,
+                                        onCheckedChange = { c ->
+                                            if (c) {
+                                                correctIndices.add(index)
+                                            } else {
+                                                correctIndices.remove(index)
+                                            }
+                                        },
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                }
+                            }
                         }
                         OutlinedTextField(
                             value = option,
                             onValueChange = { options[index] = it },
-                            label = { Text(if (isFillBlank) stringResource(R.string.detail_answer_label, index + 1) else stringResource(R.string.detail_option_label, index + 1)) },
+                            label = {
+                                Text(if (isFillBlank) stringResource(R.string.detail_answer_label, index + 1) else stringResource(R.string.detail_option_label, index + 1))
+                            },
                             modifier = Modifier.weight(1f),
                             shape = AppShapes.extraSmall,
                             textStyle = MaterialTheme.typography.bodyMedium,
