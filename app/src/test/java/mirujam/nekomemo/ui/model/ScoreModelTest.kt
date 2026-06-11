@@ -8,14 +8,14 @@ class ScoreModelTest {
     @Test
     fun calculate_countsCorrectWrongAndUnanswered() {
         val questions = listOf(
-            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B"), correctIndex = 0),
-            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndex = 1),
-            QuestionUiModel(id = 3, text = "q3", options = listOf("A", "B"), correctIndex = 1)
+            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B"), correctIndices = listOf(0)),
+            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndices = listOf(1)),
+            QuestionUiModel(id = 3, text = "q3", options = listOf("A", "B"), correctIndices = listOf(1))
         )
 
         val score = ScoreModel.calculate(
             questions = questions,
-            selectedAnswers = mapOf(0 to 0, 1 to 0)
+            selectedAnswers = mapOf(0 to setOf(0), 1 to setOf(0))
         )
 
         assertEquals(1, score.correct)
@@ -34,5 +34,29 @@ class ScoreModelTest {
         assertEquals(0, score.unanswered)
         assertEquals(0, score.total)
         assertEquals(0, score.percentage)
+    }
+
+    @Test
+    fun calculate_handlesMultipleChoice() {
+        val questions = listOf(
+            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B", "C"), correctIndices = listOf(0, 2)),
+            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndices = listOf(0, 1))
+        )
+
+        // Correct multi-select
+        val score1 = ScoreModel.calculate(
+            questions = questions,
+            selectedAnswers = mapOf(0 to setOf(0, 2), 1 to setOf(0, 1))
+        )
+        assertEquals(2, score1.correct)
+
+        // Partial multi-select (wrong)
+        val score2 = ScoreModel.calculate(
+            questions = questions,
+            selectedAnswers = mapOf(0 to setOf(0))
+        )
+        assertEquals(0, score2.correct)
+        assertEquals(1, score2.wrong)
+        assertEquals(1, score2.unanswered)
     }
 }

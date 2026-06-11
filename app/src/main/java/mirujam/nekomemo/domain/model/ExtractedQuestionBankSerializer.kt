@@ -24,7 +24,7 @@ object ExtractedQuestionBankSerializer {
                     val sanitizedOptions = DataValidator.sanitizeOptions(q.options)
                     qJson.put("options", org.json.JSONArray(sanitizedOptions))
                     qJson.put("correctAnswer", q.correctAnswer)
-                    qJson.put("correctIndex", DataValidator.validateCorrectIndex(q.correctIndex, sanitizedOptions))
+                    qJson.put("correctIndices", org.json.JSONArray(DataValidator.validateCorrectIndices(q.correctIndices, sanitizedOptions)))
 
                     questionsArray.put(qJson)
                 } catch (e: Exception) {
@@ -36,7 +36,7 @@ object ExtractedQuestionBankSerializer {
                         fallbackJson.put("content", "Failed to serialize question")
                         fallbackJson.put("options", org.json.JSONArray(emptyList<String>()))
                         fallbackJson.put("correctAnswer", "")
-                        fallbackJson.put("correctIndex", 0)
+                        fallbackJson.put("correctIndices", org.json.JSONArray(listOf(0)))
                         questionsArray.put(fallbackJson)
                     } catch (e2: Exception) {
                         Timber.e(e2, "toJson: Failed to create fallback question at index $index")
@@ -135,15 +135,15 @@ object ExtractedQuestionBankSerializer {
                         continue
                     }
 
+                    // Parse correctIndices - support both new (array) and legacy (single int) formats
+                    val correctIndices = parseCorrectIndices(qJson, sanitizedOptions)
+
                     val question = ExtractedQuestion(
                         type = qJson.optString("type", "Unknown").ifBlank { "Unknown" },
                         content = content,
                         options = sanitizedOptions,
                         correctAnswer = qJson.optString("correctAnswer", ""),
-                        correctIndex = DataValidator.validateCorrectIndex(
-                            qJson.optInt("correctIndex", 0),
-                            sanitizedOptions
-                        )
+                        correctIndices = correctIndices
                     )
 
                     validQuestions.add(question)
@@ -174,5 +174,24 @@ object ExtractedQuestionBankSerializer {
             Timber.e(e, "fromJson: Unexpected error (input length=${jsonString.length})")
             null
         }
+    }
+
+    private fun parseCorrectIndices(qJson: org.json.JSONObject, options: List<String>): List<Int> {
+        // Try new format: correctIndices as JSON array
+        val indicesArray = qJson.optJSONArray("correctIndices")
+        if (indicesArray != null && indicesArray.length() > 0) {
+            val indices = (0 until indicesArray.length()).mapNotNull { i ->
+                try { indicesArray.getInt(i) } catch (e: Exception) { null }
+            }
+            return DataValidator.validateCorrectIndices(indices, options)
+        }
+
+        // Fallback to legacy format: correctIndex as single int
+        val legacyIndex = qJson.optInt("correctIndex", -1)
+        if (legacyIndex >= 0) {
+            return DataValidator.validateCorrectIndices(listOf(legacyIndex), options)
+        }
+
+        return listOf(0)
     }
 }

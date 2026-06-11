@@ -9,4 +9,10 @@ class Converters {
 
     @TypeConverter
     fun toStringList(value: String): List<String> = ListJsonConverter.toStringList(value)
+
+    @TypeConverter
+    fun fromIntList(value: List<Int>): String = IntListJsonConverter.fromIntList(value)
+
+    @TypeConverter
+    fun toIntList(value: String): List<Int> = IntListJsonConverter.toIntList(value)
 }

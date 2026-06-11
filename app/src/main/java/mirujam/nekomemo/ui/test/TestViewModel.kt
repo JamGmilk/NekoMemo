@@ -43,8 +43,12 @@ class TestViewModel @Inject constructor(
         if (shuffleOptions) {
             models.map { model ->
                 val shuffledOptions = model.options.shuffled()
-                val newCorrectIndex = shuffledOptions.indexOf(model.options[model.correctIndex])
-                model.copy(options = shuffledOptions, correctIndex = newCorrectIndex)
+                val newCorrectIndices = model.correctIndices.mapNotNull { oldIdx ->
+                    if (oldIdx in model.options.indices) {
+                        shuffledOptions.indexOf(model.options[oldIdx])
+                    } else null
+                }
+                model.copy(options = shuffledOptions, correctIndices = newCorrectIndices)
             }
         } else {
             models
@@ -61,8 +65,8 @@ class TestViewModel @Inject constructor(
     private val _bankTitle = MutableStateFlow<UiText>(UiText.StringResource(R.string.test_mode_title))
     val bankTitle: StateFlow<UiText> = _bankTitle.asStateFlow()
 
-    private val _selectedAnswers = MutableStateFlow(emptyMap<Int, Int>())
-    val selectedAnswers: StateFlow<Map<Int, Int>> = _selectedAnswers.asStateFlow()
+    private val _selectedAnswers = MutableStateFlow(emptyMap<Int, Set<Int>>())
+    val selectedAnswers: StateFlow<Map<Int, Set<Int>>> = _selectedAnswers.asStateFlow()
 
     private val _revealedQuestions = MutableStateFlow(emptySet<Int>())
     val revealedQuestions: StateFlow<Set<Int>> = _revealedQuestions.asStateFlow()
@@ -112,9 +116,17 @@ class TestViewModel @Inject constructor(
         return source.take(count)
     }
 
-    fun selectAnswer(questionIndex: Int, optionIndex: Int) {
+    fun toggleAnswer(questionIndex: Int, optionIndex: Int) {
         val shouldReveal = directAnswer.value
-        _selectedAnswers.update { it.toMutableMap().apply { this[questionIndex] = optionIndex } }
+        _selectedAnswers.update { map ->
+            val current = map[questionIndex] ?: emptySet()
+            val newSet = if (optionIndex in current) {
+                current - optionIndex
+            } else {
+                current + optionIndex
+            }
+            map.toMutableMap().apply { this[questionIndex] = newSet }
+        }
         if (shouldReveal) {
             revealAnswer(questionIndex)
         }

@@ -7,7 +7,7 @@ data class ExtractedQuestion(
     val content: String,
     val options: List<String>,
     val correctAnswer: String,
-    val correctIndex: Int
+    val correctIndices: List<Int>
 ) {
     companion object {
         fun sanitizeContent(content: String): String = DataValidator.sanitizeContent(content)

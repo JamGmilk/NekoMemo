@@ -202,13 +202,13 @@ class BankDetailViewModel @Inject constructor(
         _showAddQuestionDialog.value = false
     }
 
-    fun addQuestion(text: String, options: List<String>, correctIndex: Int) {
+    fun addQuestion(text: String, options: List<String>, correctIndices: List<Int>) {
         viewModelScope.launch {
             val question = Question(
                 questionBankId = bankId,
                 text = text,
                 options = options,
-                correctIndex = correctIndex
+                correctIndices = correctIndices
             )
             repository.insertQuestions(listOf(question))
             _showAddQuestionDialog.value = false
@@ -228,10 +228,10 @@ class BankDetailViewModel @Inject constructor(
         _editingQuestion.value = null
     }
 
-    fun updateQuestion(questionId: Long, text: String, options: List<String>, correctIndex: Int) {
+    fun updateQuestion(questionId: Long, text: String, options: List<String>, correctIndices: List<Int>) {
         viewModelScope.launch {
             try {
-                repository.updateQuestion(questionId, bankId, text, options, correctIndex)
+                repository.updateQuestion(questionId, bankId, text, options, correctIndices)
                 _editingQuestionId.value = null
                 _editingQuestion.value = null
             } catch (e: Exception) {

@@ -5,5 +5,5 @@ data class Question(
     val questionBankId: Long,
     val text: String,
     val options: List<String>,
-    val correctIndex: Int
+    val correctIndices: List<Int>
 )

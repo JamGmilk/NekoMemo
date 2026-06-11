@@ -57,6 +57,11 @@ object DataValidator {
         }
     }
 
+    fun validateCorrectIndices(indices: List<Int>, options: List<String>): List<Int> {
+        if (options.isEmpty() || indices.isEmpty()) return listOf(0)
+        return indices.filter { it in options.indices }.ifEmpty { listOf(0) }
+    }
+
     fun validateTitle(title: String): String = sanitizeString(title, MAX_TITLE_LENGTH)
 
     fun validateCategory(category: String): String = sanitizeString(category, MAX_CATEGORY_LENGTH)

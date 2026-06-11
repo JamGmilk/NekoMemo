@@ -180,8 +180,9 @@ fun TestScreen(
 
                 if (currentIndex in questions.indices) {
                     val question = questions[currentIndex]
-                    val selectedIndex = selectedAnswers[currentIndex]
+                    val selectedSet = selectedAnswers[currentIndex] ?: emptySet()
                     val isRevealed = isReviewMode || currentIndex in revealedQuestions
+                    val isMultipleChoice = question.correctIndices.size > 1
 
                 Card(
                     modifier = Modifier
@@ -208,8 +209,8 @@ fun TestScreen(
                         Spacer(modifier = Modifier.height(20.dp))
 
                         question.options.forEachIndexed { optionIndex, option ->
-                            val isSelected = selectedIndex == optionIndex
-                            val isCorrect = question.correctIndex == optionIndex
+                            val isSelected = optionIndex in selectedSet
+                            val isCorrect = optionIndex in question.correctIndices
                             val showResult = isRevealed && isCorrect
                             val showWrong = isSelected && isRevealed && !isCorrect
 
@@ -239,7 +240,7 @@ fun TestScreen(
                                     )
                                     .clickable {
                                         if (!isRevealed) {
-                                            viewModel.selectAnswer(currentIndex, optionIndex)
+                                            viewModel.toggleAnswer(currentIndex, optionIndex)
                                         }
                                     }
                                     .padding(horizontal = 16.dp, vertical = 18.dp),
@@ -274,10 +275,11 @@ fun TestScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(10.dp)
+                            )
                         }
 
-                        if (!isRevealed && selectedIndex != null && !directAnswer) {
+                        if (!isRevealed && selectedSet.isNotEmpty() && !directAnswer) {
                             Button(
                                 onClick = { viewModel.revealAnswer(currentIndex) },
                                 modifier = Modifier.fillMaxWidth(),
@@ -347,7 +349,7 @@ fun TestScreen(
 private fun ScoreSummary(
     viewModel: TestViewModel,
     questions: List<QuestionUiModel>,
-    selectedAnswers: Map<Int, Int>,
+    selectedAnswers: Map<Int, Set<Int>>,
     modifier: Modifier = Modifier
 ) {
     val score = remember(questions, selectedAnswers) {

@@ -146,3 +146,42 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         }
     }
 }
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Create temp table with new schema: correctIndex INTEGER → correctIndices TEXT
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `questions_temp` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `questionBankId` INTEGER NOT NULL,
+                `text` TEXT NOT NULL,
+                `options` TEXT NOT NULL,
+                `correctIndices` TEXT NOT NULL,
+                FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        // Migrate data: convert single correctIndex to JSON array
+        val questions = db.query("SELECT `id`, `questionBankId`, `text`, `options`, `correctIndex` FROM `questions`")
+        while (questions.moveToNext()) {
+            val id = questions.getLong(0)
+            val questionBankId = questions.getLong(1)
+            val text = questions.getString(2)
+            val options = questions.getString(3)
+            val correctIndex = questions.getInt(4)
+
+            // Convert single int to JSON array, e.g. 2 → "[2]"
+            val correctIndicesJson = org.json.JSONArray().put(correctIndex).toString()
+
+            db.execSQL(
+                "INSERT INTO `questions_temp` (`id`, `questionBankId`, `text`, `options`, `correctIndices`) VALUES (?, ?, ?, ?, ?)",
+                arrayOf<Any?>(id, questionBankId, text, options, correctIndicesJson)
+            )
+        }
+        questions.close()
+
+        db.execSQL("DROP TABLE IF EXISTS `questions`")
+        db.execSQL("ALTER TABLE `questions_temp` RENAME TO `questions`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_questions_questionBankId` ON `questions` (`questionBankId`)")
+    }
+}

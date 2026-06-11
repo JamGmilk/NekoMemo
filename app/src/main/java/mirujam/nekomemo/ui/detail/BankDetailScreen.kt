@@ -171,10 +171,10 @@ fun BankDetailScreen(
             title = stringResource(R.string.detail_add_dialog_title),
             initialText = "",
             initialOptions = listOf("", "", "", ""),
-            initialCorrectIndex = 0,
+            initialCorrectIndices = listOf(0),
             onDismiss = { viewModel.dismissAddQuestionDialog() },
-            onConfirm = { text, options, correctIndex ->
-                viewModel.addQuestion(text, options, correctIndex)
+            onConfirm = { text, options, correctIndices ->
+                viewModel.addQuestion(text, options, correctIndices)
             }
         )
     }
@@ -184,10 +184,10 @@ fun BankDetailScreen(
             title = stringResource(R.string.detail_edit_question_dialog_title),
             initialText = q.text,
             initialOptions = q.options,
-            initialCorrectIndex = q.correctIndex,
+            initialCorrectIndices = q.correctIndices,
             onDismiss = { viewModel.dismissEditQuestionDialog() },
-            onConfirm = { text, options, correctIndex ->
-                viewModel.updateQuestion(q.id, text, options, correctIndex)
+            onConfirm = { text, options, correctIndices ->
+                viewModel.updateQuestion(q.id, text, options, correctIndices)
             }
         )
     }
@@ -511,7 +511,7 @@ private fun QuestionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             optionList.forEachIndexed { index, option ->
-                val isCorrect = index == question.correctIndex
+                val isCorrect = index in question.correctIndices
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -679,13 +679,13 @@ private fun QuestionEditDialog(
     title: String,
     initialText: String,
     initialOptions: List<String>,
-    initialCorrectIndex: Int,
+    initialCorrectIndices: List<Int>,
     onDismiss: () -> Unit,
-    onConfirm: (String, List<String>, Int) -> Unit
+    onConfirm: (String, List<String>, List<Int>) -> Unit
 ) {
     var questionText by remember { mutableStateOf(initialText) }
     val options = remember { mutableStateListOf(*initialOptions.toTypedArray()) }
-    var correctIndex by remember { mutableIntStateOf(initialCorrectIndex) }
+    val correctIndices = remember { mutableStateListOf(*initialCorrectIndices.toTypedArray()) }
 
     DialogWithIcon(
         onDismiss = onDismiss,
@@ -693,9 +693,9 @@ private fun QuestionEditDialog(
         title = title,
         confirmText = stringResource(R.string.common_save),
         onConfirm = {
-            onConfirm(questionText, options.filter { it.isNotBlank() }, correctIndex)
+            onConfirm(questionText, options.filter { it.isNotBlank() }, correctIndices.toList())
         },
-        confirmEnabled = questionText.isNotBlank() && options.any { it.isNotBlank() },
+        confirmEnabled = questionText.isNotBlank() && options.any { it.isNotBlank() } && correctIndices.isNotEmpty(),
         dismissText = stringResource(R.string.common_cancel),
         content = {
             OutlinedTextField(
@@ -709,7 +709,7 @@ private fun QuestionEditDialog(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Column(Modifier.selectableGroup()) {
+            Column {
                 options.forEachIndexed { index, option ->
                     Row(
                         modifier = Modifier
@@ -717,9 +717,15 @@ private fun QuestionEditDialog(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(
-                            selected = correctIndex == index,
-                            onClick = { correctIndex = index },
+                        Checkbox(
+                            checked = index in correctIndices,
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    correctIndices.add(index)
+                                } else {
+                                    correctIndices.remove(index)
+                                }
+                            },
                             modifier = Modifier.padding(end = 4.dp)
                         )
                         OutlinedTextField(

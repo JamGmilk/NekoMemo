@@ -13,7 +13,7 @@ class HtmlParserUseCase @Inject constructor() {
     companion object {
         private val NUMBER_PREFIX_REGEX = Regex("^\\d+\\.\\s*")
         private val LETTER_PREFIX_REGEX = Regex("^[A-Ha-h]\\.\\s*")
-        private val CORRECT_ANSWER_REGEX = Regex("正确答案[:\\s]*([A-Ha-h])")
+        private val CORRECT_ANSWER_REGEX = Regex("正确答案[:\\s]*([A-Ha-h]+)")
         private val LETTER_REGEX = Regex("[A-Ha-h]")
     }
 
@@ -49,30 +49,52 @@ class HtmlParserUseCase @Inject constructor() {
             try {
                 val type = parseQuestionType(div)
 
-                if (type != "Single Choice") {
-                    Timber.d("Skipping question $index: unsupported type '$type'")
-                    unsupportedTypeCount++
-                    continue
-                }
+                when (type) {
+                    "Single Choice", "Multiple Choice" -> {
+                        val content = ExtractedQuestion.sanitizeContent(parseQuestionContent(div))
+                        val options = parseOptions(div)
+                        val correctAnswer = parseCorrectAnswer(div)
+                        val correctIndices = lettersToIndices(correctAnswer)
 
-                val content = ExtractedQuestion.sanitizeContent(parseQuestionContent(div))
-                val options = parseOptions(div)
-                val correctAnswer = parseCorrectAnswer(div)
-                val correctIndex = letterToIndex(correctAnswer)
+                        if (content.isNotBlank() && options.isNotEmpty() && correctAnswer.isNotBlank()) {
+                            questions.add(
+                                ExtractedQuestion(
+                                    type = type,
+                                    content = content,
+                                    options = options,
+                                    correctAnswer = correctAnswer,
+                                    correctIndices = correctIndices
+                                )
+                            )
+                            processedCount++
+                        } else {
+                            skippedCount++
+                        }
+                    }
+                    "Fill in the Blank" -> {
+                        val content = ExtractedQuestion.sanitizeContent(parseQuestionContent(div))
+                        val fillAnswers = parseFillBlankAnswers(div)
+                        val correctAnswer = fillAnswers.joinToString("; ")
 
-                if (content.isNotBlank() && options.isNotEmpty() && correctAnswer.isNotBlank()) {
-                    questions.add(
-                        ExtractedQuestion(
-                            type = type,
-                            content = content,
-                            options = options,
-                            correctAnswer = correctAnswer,
-                            correctIndex = correctIndex
-                        )
-                    )
-                    processedCount++
-                } else {
-                    skippedCount++
+                        if (content.isNotBlank() && fillAnswers.isNotEmpty()) {
+                            questions.add(
+                                ExtractedQuestion(
+                                    type = type,
+                                    content = content,
+                                    options = fillAnswers,
+                                    correctAnswer = correctAnswer,
+                                    correctIndices = fillAnswers.indices.toList()
+                                )
+                            )
+                            processedCount++
+                        } else {
+                            skippedCount++
+                        }
+                    }
+                    else -> {
+                        Timber.d("Skipping question $index: unsupported type '$type'")
+                        unsupportedTypeCount++
+                    }
                 }
             } catch (e: Exception) {
                 Timber.w("Error parsing question $index: ${e.message}")
@@ -178,10 +200,24 @@ class HtmlParserUseCase @Inject constructor() {
         return ""
     }
 
-    private fun letterToIndex(letter: String): Int {
-        if (letter.isBlank()) return 0
-        val index = "ABCDEFGH".indexOf(letter.uppercase())
-        return if (index >= 0) index else 0
+    private fun parseFillBlankAnswers(div: org.jsoup.nodes.Element): List<String> {
+        val rightAnswerDds = div.select("dl.mark_fill dd.rightAnswerContent")
+        if (rightAnswerDds.isNotEmpty()) {
+            return rightAnswerDds.mapNotNull { dd ->
+                val text = dd.text().trim()
+                    .replace(Regex("^\\(\\d+\\)\\s*"), "")
+                text.takeIf { it.isNotBlank() }
+            }
+        }
+        return emptyList()
+    }
+
+    private fun lettersToIndices(letters: String): List<Int> {
+        if (letters.isBlank()) return emptyList()
+        return letters.mapNotNull { ch ->
+            val index = "ABCDEFGH".indexOf(ch.uppercaseChar())
+            if (index >= 0) index else null
+        }
     }
 
     fun decodeHtmlFromJs(raw: String?): String {

@@ -386,7 +386,7 @@ private fun ExtractedQuestionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             question.options.forEachIndexed { optIndex, option ->
-                val isCorrect = optIndex == question.correctIndex
+                val isCorrect = optIndex in question.correctIndices
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -400,7 +400,7 @@ private fun ExtractedQuestionCard(
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
-                    } else {
+                    } else if (question.type != "Fill in the Blank") {
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
                             contentDescription = null,
@@ -409,9 +409,13 @@ private fun ExtractedQuestionCard(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    val optionLetter = ('A' + optIndex).toString()
+                    val prefix = if (question.type == "Fill in the Blank") {
+                        "(${optIndex + 1})"
+                    } else {
+                        ('A' + optIndex).toString() + "."
+                    }
                     Text(
-                        text = "$optionLetter. $option",
+                        text = "$prefix $option",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )

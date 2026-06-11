@@ -36,7 +36,7 @@ class BankExportImportUseCase @Inject constructor(
             val qJson = JSONObject()
             qJson.put("text", q.text)
             qJson.put("options", JSONArray(q.options))
-            qJson.put("correctIndex", q.correctIndex)
+            qJson.put("correctIndices", JSONArray(q.correctIndices))
             questionsArray.put(qJson)
         }
         json.put("questions", questionsArray)
@@ -152,14 +152,32 @@ class BankExportImportUseCase @Inject constructor(
             return null
         }
 
-        val correctIndex = DataValidator.validateCorrectIndex(qJson.optInt("correctIndex", 0), options)
+        // Parse correctIndices - support both new (array) and legacy (single int) formats
+        val correctIndices = parseCorrectIndices(qJson, options)
 
         return Question(
             questionBankId = bankId,
             text = text,
             options = options,
-            correctIndex = correctIndex
+            correctIndices = correctIndices
         )
+    }
+
+    private fun parseCorrectIndices(qJson: JSONObject, options: List<String>): List<Int> {
+        val indicesArray = qJson.optJSONArray("correctIndices")
+        if (indicesArray != null && indicesArray.length() > 0) {
+            val indices = (0 until indicesArray.length()).mapNotNull { i ->
+                try { indicesArray.getInt(i) } catch (e: Exception) { null }
+            }
+            return DataValidator.validateCorrectIndices(indices, options)
+        }
+
+        val legacyIndex = qJson.optInt("correctIndex", -1)
+        if (legacyIndex >= 0) {
+            return DataValidator.validateCorrectIndices(listOf(legacyIndex), options)
+        }
+
+        return listOf(0)
     }
 
     private fun parseAndValidateOptions(optionsArray: JSONArray): List<String> {
