@@ -76,7 +76,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.BuildConfig
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.validator.DataValidator
@@ -97,7 +97,7 @@ fun SettingsScreen(
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showRenameCategoryDialog by remember { mutableStateOf(false) }
     var showDeleteCategoryDialog by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf<CategoryEntity?>(null) }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     var snackbarTrigger by remember { mutableIntStateOf(0) }
 
@@ -273,13 +273,13 @@ fun SettingsScreen(
 
             val onAddClick = remember { { showAddCategoryDialog = true } }
             val onRenameClick = remember {
-                { category: CategoryEntity ->
+                { category: Category ->
                     selectedCategory = category
                     showRenameCategoryDialog = true
                 }
             }
             val onDeleteClick = remember {
-                { category: CategoryEntity ->
+                { category: Category ->
                     selectedCategory = category
                     showDeleteCategoryDialog = true
                 }
@@ -529,10 +529,10 @@ private fun StatisticsCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryCard(
-    categories: List<CategoryEntity>,
+    categories: List<Category>,
     onAddCategory: () -> Unit,
-    onRenameCategory: (CategoryEntity) -> Unit,
-    onDeleteCategory: (CategoryEntity) -> Unit,
+    onRenameCategory: (Category) -> Unit,
+    onDeleteCategory: (Category) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsCard(

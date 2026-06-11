@@ -224,7 +224,7 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
                 `text` TEXT NOT NULL,
                 `options` TEXT NOT NULL,
                 `correctIndices` TEXT NOT NULL,
-                `type` INTEGER NOT NULL DEFAULT 1,
+                `type` INTEGER NOT NULL,
                 FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
             )
         """.trimIndent())

@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
@@ -41,7 +41,7 @@ class LibraryViewModel @Inject constructor(
     val banks: StateFlow<List<QuestionBank>> = repository.getAllBanks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val categories: StateFlow<List<CategoryEntity>> = categoryRepository.getAllCategories()
+    val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val categoryMap: StateFlow<Map<Long, String>> = categories.map { list ->

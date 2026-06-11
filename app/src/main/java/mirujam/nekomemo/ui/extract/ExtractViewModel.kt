@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.domain.model.ExtractedQuestionBank
@@ -41,7 +41,7 @@ class ExtractViewModel @Inject constructor(
     private val _isSaveSuccess = MutableStateFlow(false)
     val isSaveSuccess: StateFlow<Boolean> = _isSaveSuccess.asStateFlow()
 
-    val categories: StateFlow<List<CategoryEntity>> = categoryRepository.getAllCategories()
+    val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

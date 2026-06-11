@@ -1,9 +1,13 @@
 package mirujam.nekomemo.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import mirujam.nekomemo.data.local.dao.CategoryDao
 import mirujam.nekomemo.data.local.dao.QuestionBankDao
 import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.data.mapper.toDomainModel
+import mirujam.nekomemo.data.mapper.toDomainCategoryModels
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.validator.DataValidator
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,17 +21,17 @@ class CategoryRepository @Inject constructor(
         const val DEFAULT_CATEGORY_NAME = "GENERAL"
     }
 
-    fun getAllCategories(): Flow<List<CategoryEntity>> =
-        categoryDao.getAllCategories()
+    fun getAllCategories(): Flow<List<Category>> =
+        categoryDao.getAllCategories().map { it.toDomainCategoryModels() }
 
-    suspend fun getAllCategoriesSync(): List<CategoryEntity> =
-        categoryDao.getAllCategoriesSync()
+    suspend fun getAllCategoriesSync(): List<Category> =
+        categoryDao.getAllCategoriesSync().map { it.toDomainModel() }
 
-    suspend fun getCategoryById(id: Long): CategoryEntity? =
-        categoryDao.getCategoryById(id)
+    suspend fun getCategoryById(id: Long): Category? =
+        categoryDao.getCategoryById(id)?.toDomainModel()
 
-    suspend fun getCategoryByName(name: String): CategoryEntity? =
-        categoryDao.getCategoryByName(name)
+    suspend fun getCategoryByName(name: String): Category? =
+        categoryDao.getCategoryByName(name)?.toDomainModel()
 
     suspend fun isDefaultCategory(categoryId: Long): Boolean {
         val category = categoryDao.getCategoryById(categoryId) ?: return false

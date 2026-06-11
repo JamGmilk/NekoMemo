@@ -1,6 +1,5 @@
 package mirujam.nekomemo.data.local.dao
 
-import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -18,11 +17,9 @@ interface QuestionDao {
     @Query("SELECT * FROM questions WHERE questionBankId = :bankId ORDER BY id")
     fun getQuestionsForBank(bankId: Long): Flow<List<QuestionEntity>>
 
+    /** 统一查询：query 为空时 LIKE '%%' 匹配所有行，等价于无条件查询 */
     @Query("SELECT * FROM questions WHERE questionBankId = :bankId AND text LIKE '%' || :query || '%' ORDER BY id")
-    fun searchQuestionsForBank(bankId: Long, query: String): Flow<List<QuestionEntity>>
-
-    @Query("SELECT * FROM questions WHERE questionBankId = :bankId ORDER BY id")
-    fun getPagedQuestionsForBank(bankId: Long): PagingSource<Int, QuestionEntity>
+    fun queryQuestionsForBank(bankId: Long, query: String): Flow<List<QuestionEntity>>
 
     @Query("SELECT * FROM questions WHERE questionBankId = :bankId ORDER BY id")
     suspend fun getQuestionsForBankSync(bankId: Long): List<QuestionEntity>
@@ -44,12 +41,12 @@ interface QuestionDao {
 
     @Transaction
     suspend fun insertOrUpdateInTransaction(questions: List<QuestionEntity>) {
-        questions.forEach { question ->
-            if (question.id == 0L) {
-                insert(question)
-            } else {
-                updateQuestion(question)
-            }
+        val (newQuestions, existingQuestions) = questions.partition { it.id == 0L }
+        if (newQuestions.isNotEmpty()) {
+            insertAll(newQuestions)
+        }
+        if (existingQuestions.isNotEmpty()) {
+            updateQuestions(existingQuestions)
         }
     }
 

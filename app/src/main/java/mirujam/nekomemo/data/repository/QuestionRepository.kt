@@ -1,18 +1,12 @@
 package mirujam.nekomemo.data.repository
 
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.map
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import mirujam.nekomemo.data.local.ListJsonConverter
 import mirujam.nekomemo.data.local.NekoMemoDatabase
 import mirujam.nekomemo.data.local.dao.QuestionBankDao
 import mirujam.nekomemo.data.local.dao.QuestionDao
 import mirujam.nekomemo.data.local.entity.QuestionCountByBank
-import mirujam.nekomemo.data.local.entity.QuestionEntity
 import mirujam.nekomemo.data.mapper.toDomainBankModels
 import mirujam.nekomemo.data.mapper.toDomainModel
 import mirujam.nekomemo.data.mapper.toDomainQuestionModels
@@ -60,14 +54,9 @@ class QuestionRepository @Inject constructor(
     fun getQuestionsForBank(bankId: Long): Flow<List<Question>> =
         questionDao.getQuestionsForBank(bankId).map { it.toDomainQuestionModels() }
 
-    fun searchQuestionsForBank(bankId: Long, query: String): Flow<List<Question>> =
-        questionDao.searchQuestionsForBank(bankId, query).map { it.toDomainQuestionModels() }
-
-    fun getPagedQuestionsForBank(bankId: Long): Flow<PagingData<Question>> =
-        Pager(
-            config = PagingConfig(pageSize = 50, enablePlaceholders = false),
-            pagingSourceFactory = { questionDao.getPagedQuestionsForBank(bankId) }
-        ).flow.map { pagingData -> pagingData.map { it.toDomainModel() } }
+    /** 统一查询：query 为空时返回所有题目，非空时按文本搜索 */
+    fun queryQuestionsForBank(bankId: Long, query: String): Flow<List<Question>> =
+        questionDao.queryQuestionsForBank(bankId, query).map { it.toDomainQuestionModels() }
 
     suspend fun getQuestionsForBankSync(bankId: Long): List<Question> =
         questionDao.getQuestionsForBankSync(bankId).toDomainQuestionModels()
@@ -83,14 +72,7 @@ class QuestionRepository @Inject constructor(
 
     suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: QuestionType) {
         questionDao.updateQuestion(
-            QuestionEntity(
-                id = id,
-                questionBankId = questionBankId,
-                text = text,
-                options = ListJsonConverter.fromStringList(options),
-                correctIndices = mirujam.nekomemo.data.local.IntListJsonConverter.fromIntList(correctIndices),
-                type = type
-            )
+            Question(id, questionBankId, text, options, correctIndices, type).toEntity()
         )
     }
 

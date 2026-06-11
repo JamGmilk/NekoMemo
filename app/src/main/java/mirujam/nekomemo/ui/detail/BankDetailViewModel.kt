@@ -4,13 +4,9 @@ import timber.log.Timber
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
-import androidx.paging.map
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +16,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.domain.model.Question
@@ -46,10 +42,6 @@ class BankDetailViewModel @Inject constructor(
 
     private val exportDelegate = ExportDelegate(viewModelScope, bankExportImportUseCase)
     val exportState: StateFlow<ExportState> = exportDelegate.exportState
-
-    val pagedQuestions: Flow<PagingData<QuestionUiModel>> = repository.getPagedQuestionsForBank(bankId)
-        .map { pagingData -> pagingData.map { QuestionUiModel.fromDomainModel(it) } }
-        .cachedIn(viewModelScope)
 
     private val _questionCount = MutableStateFlow(0)
     val questionCount: StateFlow<Int> = _questionCount.asStateFlow()
@@ -81,18 +73,14 @@ class BankDetailViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val categories: StateFlow<List<CategoryEntity>> = categoryRepository.getAllCategories()
+    val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val filteredQuestions: StateFlow<List<QuestionUiModel>> = _searchQuery
         .debounce(300)
         .flatMapLatest { query ->
-            if (query.isBlank()) {
-                kotlinx.coroutines.flow.flowOf(emptyList())
-            } else {
-                repository.searchQuestionsForBank(bankId, query).map { list ->
-                    list.map { QuestionUiModel.fromDomainModel(it) }
-                }
+            repository.queryQuestionsForBank(bankId, query).map { list ->
+                list.map { QuestionUiModel.fromDomainModel(it) }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

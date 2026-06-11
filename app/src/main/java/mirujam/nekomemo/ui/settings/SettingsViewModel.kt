@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.preferences.TestPreferenceRepository
 import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.data.preferences.ThemePreferenceRepository
@@ -46,7 +46,7 @@ class SettingsViewModel @Inject constructor(
     val directAnswer: StateFlow<Boolean> = testPreferenceRepository.directAnswer
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val categories: StateFlow<List<CategoryEntity>> = categoryRepository.getAllCategories()
+    val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _categoryError = MutableStateFlow<String?>(null)

@@ -79,7 +79,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.paging.compose.collectAsLazyPagingItems
 import mirujam.nekomemo.R
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.model.QuestionType
@@ -100,7 +99,6 @@ fun BankDetailScreen(
     onBack: () -> Unit,
     viewModel: BankDetailViewModel = hiltViewModel()
 ) {
-    val pagingItems = viewModel.pagedQuestions.collectAsLazyPagingItems()
     val bankTitle by viewModel.bankTitle.collectAsState()
     val bankCategoryId by viewModel.bankCategoryId.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
@@ -110,14 +108,14 @@ fun BankDetailScreen(
     val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsState()
     val showDeleteBankConfirmDialog by viewModel.showDeleteBankConfirmDialog.collectAsState()
 
-    val filteredQuestions by viewModel.filteredQuestions.collectAsState()
+    val questions by viewModel.filteredQuestions.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val questionCount by viewModel.questionCount.collectAsState()
     val categories by viewModel.categories.collectAsState()
     var showTestConfigDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
 
-    val isSearchBlank by remember { derivedStateOf { searchQuery.isBlank() } }
+    val isSearchActive by remember { derivedStateOf { searchQuery.isNotBlank() } }
     val questionCountText = pluralStringResource(R.plurals.library_questions_count, questionCount, questionCount)
 
     val context = LocalContext.current
@@ -405,27 +403,23 @@ fun BankDetailScreen(
                         }
                     }
 
-                    if (isSearchBlank) {
-                        items(
-                            count = pagingItems.itemCount,
-                            key = { index -> pagingItems[index]?.id ?: index },
-                            contentType = { "question" }
-                        ) { index ->
-                            val question = pagingItems[index] ?: return@items
-                            QuestionCard(
-                                question = question,
-                                onEdit = { viewModel.showEditQuestionDialog(question.id) },
-                                onDelete = { viewModel.deleteQuestion(question) }
+                    if (isSearchActive) {
+                        item {
+                            Text(
+                                text = pluralStringResource(R.plurals.library_questions_count, questions.size, questions.size),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 4.dp)
                             )
                         }
-                    } else {
-                        items(filteredQuestions, key = { it.id }, contentType = { "question" }) { question ->
-                            QuestionCard(
-                                question = question,
-                                onEdit = { viewModel.showEditQuestionDialog(question.id) },
-                                onDelete = { viewModel.deleteQuestion(question) }
-                            )
-                        }
+                    }
+
+                    items(questions, key = { it.id }, contentType = { "question" }) { question ->
+                        QuestionCard(
+                            question = question,
+                            onEdit = { viewModel.showEditQuestionDialog(question.id) },
+                            onDelete = { viewModel.deleteQuestion(question) }
+                        )
                     }
 
                     item { Spacer(modifier = Modifier.height(16.dp)) }

@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.local.entity.CategoryEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.validator.DataValidator
 import mirujam.nekomemo.ui.theme.AppShapes
@@ -39,7 +39,7 @@ import mirujam.nekomemo.ui.theme.AppShapes
 fun EditBankDialog(
     initialTitle: String,
     initialCategoryId: Long,
-    categories: List<CategoryEntity>,
+    categories: List<Category>,
     onDismiss: () -> Unit,
     onConfirm: (String, Long) -> Unit
 ) {

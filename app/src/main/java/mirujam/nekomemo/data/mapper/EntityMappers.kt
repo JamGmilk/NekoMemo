@@ -2,8 +2,10 @@ package mirujam.nekomemo.data.mapper
 
 import mirujam.nekomemo.data.local.IntListJsonConverter
 import mirujam.nekomemo.data.local.ListJsonConverter
+import mirujam.nekomemo.data.local.entity.CategoryEntity
 import mirujam.nekomemo.data.local.entity.QuestionBankEntity
 import mirujam.nekomemo.data.local.entity.QuestionEntity
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.Question
 import mirujam.nekomemo.domain.model.QuestionBank
 
@@ -42,3 +44,15 @@ fun Question.toEntity(): QuestionEntity = QuestionEntity(
 fun List<QuestionBankEntity>.toDomainBankModels(): List<QuestionBank> = map { it.toDomainModel() }
 
 fun List<QuestionEntity>.toDomainQuestionModels(): List<Question> = map { it.toDomainModel() }
+
+fun CategoryEntity.toDomainModel(): Category = Category(
+    id = id,
+    name = name
+)
+
+fun Category.toEntity(): CategoryEntity = CategoryEntity(
+    id = id,
+    name = name
+)
+
+fun List<CategoryEntity>.toDomainCategoryModels(): List<Category> = map { it.toDomainModel() }
