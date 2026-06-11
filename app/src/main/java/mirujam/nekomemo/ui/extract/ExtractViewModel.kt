@@ -115,6 +115,10 @@ class ExtractViewModel @Inject constructor(
         return sharedDataStore.getExtractedJson()
     }
 
+    suspend fun setSaveResult(message: String): Boolean {
+        return sharedDataStore.setSaveResult(message)
+    }
+
     suspend fun clearSharedDataStore(): Boolean {
         return sharedDataStore.clearExtractedJson()
     }

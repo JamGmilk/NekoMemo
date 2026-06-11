@@ -1,5 +1,8 @@
 package mirujam.nekomemo.domain.model
 
+import androidx.annotation.StringRes
+import mirujam.nekomemo.R
+
 /**
  * 题目类型枚举，数据库存储为 INTEGER (1字节)
  */
@@ -9,6 +12,15 @@ enum class QuestionType(val code: Int) {
     TRUE_FALSE(3),
     FILL_BLANK(4),
     SHORT_ANSWER(5);
+
+    @StringRes
+    fun displayNameRes(): Int = when (this) {
+        SINGLE_CHOICE -> R.string.question_type_single
+        MULTIPLE_CHOICE -> R.string.question_type_multiple
+        TRUE_FALSE -> R.string.question_type_true_false
+        FILL_BLANK -> R.string.question_type_fill_blank
+        SHORT_ANSWER -> R.string.question_type_short_answer
+    }
 
     companion object {
         fun fromCode(code: Int): QuestionType = entries.find { it.code == code } ?: SINGLE_CHOICE

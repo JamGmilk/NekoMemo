@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -78,12 +79,12 @@ import mirujam.nekomemo.BuildConfig
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.preferences.ThemeMode
-import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.validator.DataValidator
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
 import mirujam.nekomemo.ui.component.LocalSnackbarHostState
+import mirujam.nekomemo.ui.component.displayName
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.util.clearWebViewData
 
@@ -394,6 +395,7 @@ private fun AppearanceCard(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun LanguageCard(
     modifier: Modifier = Modifier
@@ -580,13 +582,9 @@ private fun CategoryCard(
                     )
 
                     categories.forEach { category ->
-                        val isDefault = category.name == CategoryRepository.DEFAULT_CATEGORY_NAME
+                        val isDefault = category.isDefault
 
-                        val displayName = if (isDefault) {
-                            stringResource(R.string.category_general_display)
-                        } else {
-                            category.name
-                        }
+                        val displayName = category.displayName()
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),

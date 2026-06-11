@@ -72,7 +72,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mirujam.nekomemo.R
@@ -91,7 +90,8 @@ private class WebViewRef {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FetcherScreen(
-    navController: NavHostController,
+    onNavigateToExtract: () -> Unit,
+    onBack: () -> Unit,
     viewModel: FetcherViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -211,7 +211,7 @@ fun FetcherScreen(
                 val success = viewModel.saveToSharedDataStore(json)
                 if (success) {
                     Timber.d("JSON saved successfully")
-                    navController.navigate(Route.Extract.route)
+                    onNavigateToExtract()
                 } else {
                     Timber.e("Failed to save JSON")
                     snackbarHostState.showSnackbar(localContext.getString(R.string.fetcher_save_failed))
@@ -322,7 +322,7 @@ fun FetcherScreen(
                 title = stringResource(Route.Fetcher.titleResId),
                 subtitle = pageTitle.takeIf { it.isNotBlank() && it != currentUrl && !currentUrl.contains(it) },
                 navigationIcon = Icons.Outlined.Close,
-                onNavigationClick = { navController.popBackStack() },
+                onNavigationClick = { onBack() },
                 actions = {
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),

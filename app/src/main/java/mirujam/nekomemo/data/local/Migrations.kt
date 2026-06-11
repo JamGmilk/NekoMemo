@@ -216,7 +216,7 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
 
 val MIGRATION_4_5 = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // 创建新表，type 列改为 INTEGER
+        // Create new table with type column changed to INTEGER
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS `questions_temp` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -229,7 +229,7 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
             )
         """.trimIndent())
 
-        // 迁移数据：将 TEXT type 转换为 INTEGER
+        // Migrate data: convert TEXT type to INTEGER
         // "Single Choice" → 1, "Multiple Choice" → 2, "True/False" → 3, "Fill in the Blank" → 4, "Short Answer" → 5
         val cursor = db.query("SELECT `id`, `questionBankId`, `text`, `options`, `correctIndices`, `type` FROM `questions`")
         while (cursor.moveToNext()) {

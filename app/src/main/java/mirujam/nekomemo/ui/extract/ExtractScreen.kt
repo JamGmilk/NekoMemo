@@ -52,13 +52,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.model.ExtractedQuestion
 import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
-import mirujam.nekomemo.ui.shared.SharedDataStore
+import mirujam.nekomemo.ui.component.displayName
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
 import timber.log.Timber
@@ -68,7 +67,6 @@ import timber.log.Timber
 @Composable
 fun ExtractScreen(
     onBack: () -> Unit,
-    sharedDataStore: SharedDataStore,
     viewModel: ExtractViewModel = hiltViewModel()
 ) {
     val questionBank by viewModel.questionBank.collectAsState()
@@ -123,14 +121,14 @@ fun ExtractScreen(
     LaunchedEffect(isSaveSuccess) {
         if (isSaveSuccess) {
             saveResult?.let {
-                sharedDataStore.setSaveResult(it.asString(context))
+                viewModel.setSaveResult(it.asString(context))
             }
             onBack()
             viewModel.onNavigatedBack()
         }
     }
 
-    val selectedCategoryName = categories.find { it.id == selectedCategoryId }?.name ?: ""
+    val selectedCategory = categories.find { it.id == selectedCategoryId }
 
     if (showSaveDialog) {
         DialogWithIcon(
@@ -162,9 +160,7 @@ fun ExtractScreen(
                         onExpandedChange = { categoryExpanded = !categoryExpanded }
                     ) {
                         val interactionSource = remember { MutableInteractionSource() }
-                        val displayName = if (selectedCategoryName == CategoryRepository.DEFAULT_CATEGORY_NAME) {
-                            stringResource(R.string.category_general_display)
-                        } else selectedCategoryName
+                        val displayName = selectedCategory?.displayName() ?: ""
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -201,11 +197,8 @@ fun ExtractScreen(
                             onDismissRequest = { categoryExpanded = false }
                         ) {
                             categories.forEach { category ->
-                                val categoryDisplayName = if (category.name == CategoryRepository.DEFAULT_CATEGORY_NAME) {
-                                    stringResource(R.string.category_general_display)
-                                } else category.name
                                 DropdownMenuItem(
-                                    text = { Text(categoryDisplayName) },
+                                    text = { Text(category.displayName()) },
                                     onClick = {
                                         selectedCategoryId = category.id
                                         categoryExpanded = false
@@ -360,13 +353,7 @@ private fun ExtractedQuestionCard(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             ) {
-                val localizedType = when (question.type) {
-                    QuestionType.SINGLE_CHOICE -> stringResource(R.string.question_type_single)
-                    QuestionType.MULTIPLE_CHOICE -> stringResource(R.string.question_type_multiple)
-                    QuestionType.TRUE_FALSE -> stringResource(R.string.question_type_true_false)
-                    QuestionType.FILL_BLANK -> stringResource(R.string.question_type_fill_blank)
-                    QuestionType.SHORT_ANSWER -> stringResource(R.string.question_type_short_answer)
-                }
+                val localizedType = stringResource(question.type.displayNameRes())
                 Text(
                     text = localizedType,
                     style = MaterialTheme.typography.labelMedium,

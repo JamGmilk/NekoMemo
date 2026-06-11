@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -104,17 +105,19 @@ class TestViewModel @Inject constructor(
         }
     }
 
-    fun getActiveQuestions(): List<QuestionUiModel> {
-        val shuffled = _shuffledQuestions.value
-        val source = if (_isShuffled.value && shuffled.isNotEmpty()) {
+    val activeQuestions: StateFlow<List<QuestionUiModel>> = combine(
+        _shuffledQuestions,
+        _isShuffled,
+        questionUiModels
+    ) { shuffled, isShuffled, models ->
+        val source = if (isShuffled && shuffled.isNotEmpty()) {
             shuffled
         } else {
-            questionUiModels.value
+            models
         }
-        
         val count = if (questionCount > 0) questionCount else source.size
-        return source.take(count)
-    }
+        source.take(count)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun toggleAnswer(questionIndex: Int, optionIndex: Int, isSingleChoice: Boolean = false) {
         val shouldReveal = directAnswer.value

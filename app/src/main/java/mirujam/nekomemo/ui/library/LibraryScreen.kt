@@ -68,13 +68,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.repository.CategoryRepository
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
 import mirujam.nekomemo.ui.component.EditBankDialog
+import mirujam.nekomemo.ui.component.ExportLauncher
 import mirujam.nekomemo.ui.component.LocalSnackbarHostState
+import mirujam.nekomemo.ui.component.displayName
 import mirujam.nekomemo.ui.theme.AppShapes
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -106,7 +108,7 @@ fun LibraryScreen(
     val sortMode by viewModel.sortMode.collectAsState()
     val filteredBanks by viewModel.filteredBanks.collectAsState()
     val categories by viewModel.categories.collectAsState()
-    val categoryMap = remember(categories) { categories.associate { it.id to it.name } }
+    val categoryMap = remember(categories) { categories.associate { it.id to it } }
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
 
@@ -114,24 +116,11 @@ fun LibraryScreen(
     var sortExpanded by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
 
-    var capturedExportJson by remember { mutableStateOf<String?>(null) }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri: Uri? ->
-        uri?.let {
-            val json = capturedExportJson ?: return@let
-            try {
-                context.contentResolver.openOutputStream(uri)?.use { stream ->
-                    stream.write(json.toByteArray(Charsets.UTF_8))
-                }
-            } catch (e: Exception) {
-                viewModel.onExportError("Export failed: ${e.message}")
-            }
-            viewModel.clearExportState()
-            capturedExportJson = null
-        }
-    }
+    ExportLauncher(
+        exportState = exportState,
+        onExportError = { viewModel.onExportError(it) },
+        onClearExportState = { viewModel.clearExportState() }
+    )
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -147,13 +136,6 @@ fun LibraryScreen(
             } catch (e: Exception) {
                 viewModel.onImportError("Failed to read file: ${e.message}")
             }
-        }
-    }
-
-    LaunchedEffect(exportState) {
-        if (exportState.isReady) {
-            capturedExportJson = exportState.json
-            exportLauncher.launch(exportState.fileName)
         }
     }
 
@@ -358,7 +340,7 @@ fun LibraryScreen(
                         QuestionBankCard(
                             bank = bank,
                             questionCount = questionCounts[bank.id] ?: 0,
-                            categoryName = categoryMap[bank.categoryId] ?: "",
+                            category = categoryMap[bank.categoryId],
                             onClick = { onBankClick(bank.id) },
                             menuExpanded = showActionMenuFor?.id == bank.id,
                             onMenuToggle = {
@@ -394,7 +376,7 @@ fun LibraryScreen(
 private fun QuestionBankCard(
     bank: QuestionBank,
     questionCount: Int,
-    categoryName: String,
+    category: Category?,
     onClick: () -> Unit,
     menuExpanded: Boolean,
     onMenuToggle: () -> Unit,
@@ -447,11 +429,8 @@ private fun QuestionBankCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val displayName = if (categoryName == CategoryRepository.DEFAULT_CATEGORY_NAME) {
-                        stringResource(R.string.category_general_display)
-                    } else categoryName
                     Text(
-                        text = displayName,
+                        text = category?.displayName() ?: "",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

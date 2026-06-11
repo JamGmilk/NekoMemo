@@ -1,9 +1,6 @@
 package mirujam.nekomemo.ui.detail
 
 import android.annotation.SuppressLint
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.expandHorizontally
@@ -58,7 +55,6 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -80,12 +76,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
-import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
 import mirujam.nekomemo.ui.component.EditBankDialog
+import mirujam.nekomemo.ui.component.ExportLauncher
 import mirujam.nekomemo.ui.component.LocalSnackbarHostState
+import mirujam.nekomemo.ui.component.displayName
 import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
@@ -123,7 +120,6 @@ fun BankDetailScreen(
     val snackbarHostState = LocalSnackbarHostState.current
 
     var exportErrorMessage by remember { mutableStateOf<String?>(null) }
-    var capturedExportJson by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(exportErrorMessage) {
         exportErrorMessage?.let {
@@ -132,35 +128,11 @@ fun BankDetailScreen(
         }
     }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri: Uri? ->
-        uri?.let {
-            val json = capturedExportJson ?: return@let
-            try {
-                context.contentResolver.openOutputStream(uri)?.use { stream ->
-                    stream.write(json.toByteArray(Charsets.UTF_8))
-                }
-            } catch (e: Exception) {
-                exportErrorMessage = context.getString(R.string.library_delete_error, e.message ?: "Unknown error")
-            }
-            viewModel.clearExportState()
-            capturedExportJson = null
-        }
-    }
-
-    LaunchedEffect(exportState) {
-        if (exportState.isReady) {
-            capturedExportJson = exportState.json
-            exportLauncher.launch(exportState.fileName)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.clearExportState()
-        }
-    }
+    ExportLauncher(
+        exportState = exportState,
+        onExportError = { exportErrorMessage = it },
+        onClearExportState = { viewModel.clearExportState() }
+    )
 
     if (showEditDialog) {
         EditBankDialog(
@@ -376,10 +348,7 @@ fun BankDetailScreen(
                     item { Spacer(modifier = Modifier.height(8.dp)) }
 
                     item {
-                        val categoryName = categories.find { it.id == bankCategoryId }?.name ?: ""
-                        val displayName = if (categoryName == CategoryRepository.DEFAULT_CATEGORY_NAME) {
-                            stringResource(R.string.category_general_display)
-                        } else categoryName
+                        val categoryName = categories.find { it.id == bankCategoryId }?.displayName() ?: ""
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = AppShapes.large,
@@ -389,7 +358,7 @@ fun BankDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = displayName,
+                                    text = categoryName,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -470,13 +439,7 @@ private fun QuestionCard(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 ) {
-                    val localizedType = when (question.type) {
-                        QuestionType.SINGLE_CHOICE -> stringResource(R.string.question_type_single)
-                        QuestionType.MULTIPLE_CHOICE -> stringResource(R.string.question_type_multiple)
-                        QuestionType.TRUE_FALSE -> stringResource(R.string.question_type_true_false)
-                        QuestionType.FILL_BLANK -> stringResource(R.string.question_type_fill_blank)
-                        QuestionType.SHORT_ANSWER -> stringResource(R.string.question_type_short_answer)
-                    }
+                    val localizedType = stringResource(question.type.displayNameRes())
                     Text(
                         text = localizedType,
                         style = MaterialTheme.typography.labelMedium,
