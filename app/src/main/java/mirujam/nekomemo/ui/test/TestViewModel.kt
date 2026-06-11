@@ -116,12 +116,14 @@ class TestViewModel @Inject constructor(
         return source.take(count)
     }
 
-    fun toggleAnswer(questionIndex: Int, optionIndex: Int) {
+    fun toggleAnswer(questionIndex: Int, optionIndex: Int, isSingleChoice: Boolean = false) {
         val shouldReveal = directAnswer.value
         _selectedAnswers.update { map ->
             val current = map[questionIndex] ?: emptySet()
             val newSet = if (optionIndex in current) {
                 current - optionIndex
+            } else if (isSingleChoice) {
+                setOf(optionIndex)
             } else {
                 current + optionIndex
             }

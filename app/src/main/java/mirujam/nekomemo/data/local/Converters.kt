@@ -1,6 +1,7 @@
 package mirujam.nekomemo.data.local
 
 import androidx.room.TypeConverter
+import mirujam.nekomemo.domain.model.QuestionType
 
 class Converters {
 
@@ -15,4 +16,10 @@ class Converters {
 
     @TypeConverter
     fun toIntList(value: String): List<Int> = IntListJsonConverter.toIntList(value)
+
+    @TypeConverter
+    fun fromQuestionType(value: QuestionType): Int = value.code
+
+    @TypeConverter
+    fun toQuestionType(value: Int): QuestionType = QuestionType.fromCode(value)
 }

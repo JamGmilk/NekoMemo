@@ -3,7 +3,7 @@ package mirujam.nekomemo.domain.model
 import mirujam.nekomemo.domain.validator.DataValidator
 
 data class ExtractedQuestion(
-    val type: String,
+    val type: QuestionType,
     val content: String,
     val options: List<String>,
     val correctAnswer: String,

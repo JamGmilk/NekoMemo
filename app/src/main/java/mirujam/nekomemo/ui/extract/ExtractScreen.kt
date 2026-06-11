@@ -54,6 +54,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.model.ExtractedQuestion
+import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
@@ -360,12 +361,11 @@ private fun ExtractedQuestionCard(
                 )
             ) {
                 val localizedType = when (question.type) {
-                    "Single Choice" -> stringResource(R.string.question_type_single)
-                    "Multiple Choice" -> stringResource(R.string.question_type_multiple)
-                    "True/False" -> stringResource(R.string.question_type_true_false)
-                    "Fill in the Blank" -> stringResource(R.string.question_type_fill_blank)
-                    "Short Answer" -> stringResource(R.string.question_type_short_answer)
-                    else -> question.type.ifBlank { stringResource(R.string.question_type_unknown) }
+                    QuestionType.SINGLE_CHOICE -> stringResource(R.string.question_type_single)
+                    QuestionType.MULTIPLE_CHOICE -> stringResource(R.string.question_type_multiple)
+                    QuestionType.TRUE_FALSE -> stringResource(R.string.question_type_true_false)
+                    QuestionType.FILL_BLANK -> stringResource(R.string.question_type_fill_blank)
+                    QuestionType.SHORT_ANSWER -> stringResource(R.string.question_type_short_answer)
                 }
                 Text(
                     text = localizedType,
@@ -400,7 +400,7 @@ private fun ExtractedQuestionCard(
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
-                    } else if (question.type != "Fill in the Blank") {
+                    } else if (question.type != QuestionType.FILL_BLANK) {
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
                             contentDescription = null,
@@ -409,7 +409,7 @@ private fun ExtractedQuestionCard(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    val prefix = if (question.type == "Fill in the Blank") {
+                    val prefix = if (question.type == QuestionType.FILL_BLANK) {
                         "(${optIndex + 1})"
                     } else {
                         ('A' + optIndex).toString() + "."

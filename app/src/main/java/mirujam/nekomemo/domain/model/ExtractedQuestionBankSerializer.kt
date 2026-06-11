@@ -18,7 +18,7 @@ object ExtractedQuestionBankSerializer {
             bank.questions.forEachIndexed { index, q ->
                 try {
                     val qJson = org.json.JSONObject()
-                    qJson.put("type", q.type.ifBlank { "Unknown" })
+                    qJson.put("type", q.type.name)
                     qJson.put("content", DataValidator.sanitizeContent(q.content))
 
                     val sanitizedOptions = DataValidator.sanitizeOptions(q.options)
@@ -32,7 +32,7 @@ object ExtractedQuestionBankSerializer {
 
                     try {
                         val fallbackJson = org.json.JSONObject()
-                        fallbackJson.put("type", "Error")
+                        fallbackJson.put("type", "SHORT_ANSWER")
                         fallbackJson.put("content", "Failed to serialize question")
                         fallbackJson.put("options", org.json.JSONArray(emptyList<String>()))
                         fallbackJson.put("correctAnswer", "")
@@ -139,7 +139,7 @@ object ExtractedQuestionBankSerializer {
                     val correctIndices = parseCorrectIndices(qJson, sanitizedOptions)
 
                     val question = ExtractedQuestion(
-                        type = qJson.optString("type", "Unknown").ifBlank { "Unknown" },
+                        type = QuestionType.fromLegacyString(qJson.optString("type", "SINGLE_CHOICE").ifBlank { "SINGLE_CHOICE" }),
                         content = content,
                         options = sanitizedOptions,
                         correctAnswer = qJson.optString("correctAnswer", ""),

@@ -107,6 +107,7 @@
     <string name="detail_edit_question_dialog_title">Edit Question</string>
     <string name="detail_question_text_label">Question Text</string>
     <string name="detail_option_label">Option %1$d</string>
+    <string name="detail_answer_label">Answer %1$d</string>
     <string name="detail_remove_last_option">Remove Last</string>
     <string name="detail_add_option">Add Option</string>
     <string name="detail_test_config_title">Test Configuration</string>

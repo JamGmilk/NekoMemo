@@ -5,6 +5,7 @@ import android.net.Uri
 import timber.log.Timber
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +84,7 @@ import mirujam.nekomemo.ui.component.LocalSnackbarHostState
 import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
+import mirujam.nekomemo.domain.model.QuestionType
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -172,9 +174,10 @@ fun BankDetailScreen(
             initialText = "",
             initialOptions = listOf("", "", "", ""),
             initialCorrectIndices = listOf(0),
+            initialType = QuestionType.SINGLE_CHOICE,
             onDismiss = { viewModel.dismissAddQuestionDialog() },
-            onConfirm = { text, options, correctIndices ->
-                viewModel.addQuestion(text, options, correctIndices)
+            onConfirm = { text, options, correctIndices, type ->
+                viewModel.addQuestion(text, options, correctIndices, type)
             }
         )
     }
@@ -185,9 +188,10 @@ fun BankDetailScreen(
             initialText = q.text,
             initialOptions = q.options,
             initialCorrectIndices = q.correctIndices,
+            initialType = q.type,
             onDismiss = { viewModel.dismissEditQuestionDialog() },
-            onConfirm = { text, options, correctIndices ->
-                viewModel.updateQuestion(q.id, text, options, correctIndices, q.type)
+            onConfirm = { text, options, correctIndices, type ->
+                viewModel.updateQuestion(q.id, text, options, correctIndices, type)
             }
         )
     }
@@ -461,16 +465,30 @@ private fun QuestionCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = question.text,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(modifier = Modifier) {
+                Card(
+                    shape = AppShapes.extraSmall,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    val localizedType = when (question.type) {
+                        QuestionType.SINGLE_CHOICE -> stringResource(R.string.question_type_single)
+                        QuestionType.MULTIPLE_CHOICE -> stringResource(R.string.question_type_multiple)
+                        QuestionType.TRUE_FALSE -> stringResource(R.string.question_type_true_false)
+                        QuestionType.FILL_BLANK -> stringResource(R.string.question_type_fill_blank)
+                        QuestionType.SHORT_ANSWER -> stringResource(R.string.question_type_short_answer)
+                    }
+                    Text(
+                        text = localizedType,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Row {
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.common_edit)) } },
@@ -510,6 +528,15 @@ private fun QuestionCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Text(
+                text = question.text,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val isFillBlank = question.type == QuestionType.FILL_BLANK
             optionList.forEachIndexed { index, option ->
                 val isCorrect = index in question.correctIndices
                 Row(
@@ -525,7 +552,7 @@ private fun QuestionCard(
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
-                    } else {
+                    } else if (!isFillBlank) {
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
                             contentDescription = null,
@@ -534,9 +561,9 @@ private fun QuestionCard(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    val optionLetter = ('A' + index).toString()
+                    val prefix = if (isFillBlank) "(${index + 1})" else ('A' + index).toString() + "."
                     Text(
-                        text = "$optionLetter. $option",
+                        text = "$prefix $option",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
@@ -680,12 +707,44 @@ private fun QuestionEditDialog(
     initialText: String,
     initialOptions: List<String>,
     initialCorrectIndices: List<Int>,
+    initialType: QuestionType = QuestionType.SINGLE_CHOICE,
     onDismiss: () -> Unit,
-    onConfirm: (String, List<String>, List<Int>) -> Unit
+    onConfirm: (String, List<String>, List<Int>, QuestionType) -> Unit
 ) {
     var questionText by remember { mutableStateOf(initialText) }
     val options = remember { mutableStateListOf(*initialOptions.toTypedArray()) }
     val correctIndices = remember { mutableStateListOf(*initialCorrectIndices.toTypedArray()) }
+    var selectedType by remember { mutableStateOf(initialType) }
+
+    // 切换类型时自动修正 correctIndices
+    LaunchedEffect(selectedType) {
+        when (selectedType) {
+            QuestionType.SINGLE_CHOICE -> {
+                // 单选题只保留第一个正确索引
+                if (correctIndices.size > 1) {
+                    val first = correctIndices.first()
+                    correctIndices.clear()
+                    correctIndices.add(first)
+                } else if (correctIndices.isEmpty() && options.isNotEmpty()) {
+                    correctIndices.add(0)
+                }
+            }
+            QuestionType.FILL_BLANK -> {
+                // 填空题所有答案都正确
+                correctIndices.clear()
+                options.indices.forEach { correctIndices.add(it) }
+            }
+            else -> {
+                // Multiple Choice / True/False: 保持不变，用户手动选择
+            }
+        }
+    }
+
+    val typeOptions = listOf(
+        QuestionType.SINGLE_CHOICE to stringResource(R.string.question_type_single),
+        QuestionType.MULTIPLE_CHOICE to stringResource(R.string.question_type_multiple),
+        QuestionType.FILL_BLANK to stringResource(R.string.question_type_fill_blank)
+    )
 
     DialogWithIcon(
         onDismiss = onDismiss,
@@ -693,11 +752,47 @@ private fun QuestionEditDialog(
         title = title,
         confirmText = stringResource(R.string.common_save),
         onConfirm = {
-            onConfirm(questionText, options.filter { it.isNotBlank() }, correctIndices.toList())
+            onConfirm(questionText, options.filter { it.isNotBlank() }, correctIndices.toList(), selectedType)
         },
         confirmEnabled = questionText.isNotBlank() && options.any { it.isNotBlank() } && correctIndices.isNotEmpty(),
         dismissText = stringResource(R.string.common_cancel),
         content = {
+            // 类型选择
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                typeOptions.forEach { (value, label) ->
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { selectedType = value },
+                        shape = AppShapes.extraSmall,
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedType == value)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (selectedType == value)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = questionText,
                 onValueChange = { questionText = it },
@@ -710,28 +805,51 @@ private fun QuestionEditDialog(
             Spacer(modifier = Modifier.height(6.dp))
 
             Column {
+                val isFillBlank = selectedType == QuestionType.FILL_BLANK
+                val isSingleChoice = selectedType == QuestionType.SINGLE_CHOICE
                 options.forEachIndexed { index, option ->
+                    val isChecked = index in correctIndices
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
-                            checked = index in correctIndices,
-                            onCheckedChange = { checked ->
-                                if (checked) {
-                                    correctIndices.add(index)
-                                } else {
-                                    correctIndices.remove(index)
-                                }
-                            },
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
+                        if (isFillBlank) {
+                            Checkbox(
+                                checked = true,
+                                onCheckedChange = null,
+                                enabled = false,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                        } else if (isSingleChoice) {
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        correctIndices.clear()
+                                        correctIndices.add(index)
+                                    }
+                                },
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                        } else {
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        correctIndices.add(index)
+                                    } else {
+                                        correctIndices.remove(index)
+                                    }
+                                },
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                        }
                         OutlinedTextField(
                             value = option,
                             onValueChange = { options[index] = it },
-                            label = { Text(stringResource(R.string.detail_option_label, index + 1)) },
+                            label = { Text(if (isFillBlank) stringResource(R.string.detail_answer_label, index + 1) else stringResource(R.string.detail_option_label, index + 1)) },
                             modifier = Modifier.weight(1f),
                             shape = AppShapes.extraSmall,
                             textStyle = MaterialTheme.typography.bodyMedium,
@@ -748,14 +866,28 @@ private fun QuestionEditDialog(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 if (options.size > 2) {
-                    TextButton(onClick = { options.removeAt(options.lastIndex) }) {
+                    TextButton(onClick = {
+                        val removedIndex = options.lastIndex
+                        options.removeAt(removedIndex)
+                        correctIndices.remove(removedIndex)
+                        // 修正被删索引之后的索引（减1）
+                        val updated = correctIndices.map { if (it > removedIndex) it - 1 else it }.toMutableList()
+                        correctIndices.clear()
+                        correctIndices.addAll(updated)
+                    }) {
                         Text(stringResource(R.string.detail_remove_last_option))
                     }
                 } else {
                     Spacer(modifier = Modifier.width(1.dp))
                 }
                 if (options.size < 8) {
-                    TextButton(onClick = { options.add("") }) {
+                    TextButton(onClick = {
+                        options.add("")
+                        // 填空题新选项自动加入正确索引
+                        if (selectedType == QuestionType.FILL_BLANK) {
+                            correctIndices.add(options.lastIndex)
+                        }
+                    }) {
                         Text(stringResource(R.string.detail_add_option))
                     }
                 }

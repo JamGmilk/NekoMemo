@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import mirujam.nekomemo.domain.model.QuestionType
 
 @Entity(
     tableName = "questions",
@@ -24,5 +25,5 @@ data class QuestionEntity(
     val text: String,
     val options: String,
     val correctIndices: String,
-    val type: String
+    val type: QuestionType
 )

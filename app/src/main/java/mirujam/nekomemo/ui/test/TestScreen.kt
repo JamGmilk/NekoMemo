@@ -30,11 +30,13 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +58,7 @@ import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
 import mirujam.nekomemo.ui.theme.ProgressIndicatorShapes
+import mirujam.nekomemo.domain.model.QuestionType
 
 @Composable
 fun TestScreen(
@@ -184,12 +187,11 @@ fun TestScreen(
                         )
                     ) {
                         val localizedType = when (question.type) {
-                            "Single Choice" -> stringResource(R.string.question_type_single)
-                            "Multiple Choice" -> stringResource(R.string.question_type_multiple)
-                            "True/False" -> stringResource(R.string.question_type_true_false)
-                            "Fill in the Blank" -> stringResource(R.string.question_type_fill_blank)
-                            "Short Answer" -> stringResource(R.string.question_type_short_answer)
-                            else -> question.type.ifBlank { stringResource(R.string.question_type_unknown) }
+                            QuestionType.SINGLE_CHOICE -> stringResource(R.string.question_type_single)
+                            QuestionType.MULTIPLE_CHOICE -> stringResource(R.string.question_type_multiple)
+                            QuestionType.TRUE_FALSE -> stringResource(R.string.question_type_true_false)
+                            QuestionType.FILL_BLANK -> stringResource(R.string.question_type_fill_blank)
+                            QuestionType.SHORT_ANSWER -> stringResource(R.string.question_type_short_answer)
                         }
                         Text(
                             text = localizedType,
@@ -237,55 +239,46 @@ fun TestScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        question.options.forEachIndexed { optionIndex, option ->
-                            val isSelected = optionIndex in selectedSet
-                            val isCorrect = optionIndex in question.correctIndices
-                            val showResult = isRevealed && isCorrect
-                            val showWrong = isSelected && isRevealed && !isCorrect
+                        val isSingleChoice = question.type == QuestionType.SINGLE_CHOICE || question.type == QuestionType.TRUE_FALSE
+                        val isFillBlank = question.type == QuestionType.FILL_BLANK
 
-                            val borderColor = when {
-                                showResult -> MaterialTheme.colorScheme.primary
-                                showWrong -> MaterialTheme.colorScheme.error
-                                isSelected -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.outlineVariant
-                            }
-
-                            val bgColor = when {
-                                showResult -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                showWrong -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                                isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                else -> MaterialTheme.colorScheme.surface
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(AppShapes.small)
-                                    .background(bgColor)
-                                    .border(
-                                        width = 1.dp,
-                                        color = borderColor,
-                                        shape = AppShapes.small
-                                    )
-                                    .clickable {
-                                        if (!isRevealed) {
-                                            viewModel.toggleAnswer(currentIndex, optionIndex)
-                                        }
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 18.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val optionLetter = ('A' + optionIndex).toString()
-                                Text(
-                                    text = "$optionLetter. $option",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Box(
-                                    modifier = Modifier.size(24.dp),
-                                    contentAlignment = Alignment.Center
+                        if (isFillBlank) {
+                            // 填空题：显示答案文本，只读
+                            question.options.forEachIndexed { optionIndex, answer ->
+                                val isCorrect = optionIndex in question.correctIndices
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(AppShapes.small)
+                                        .background(
+                                            if (isRevealed && isCorrect)
+                                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                            else
+                                                MaterialTheme.colorScheme.surface
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isRevealed && isCorrect)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.outlineVariant,
+                                            shape = AppShapes.small
+                                        )
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if (showResult) {
+                                    Text(
+                                        text = "(${optionIndex + 1})",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    )
+                                    Text(
+                                        text = answer,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (isRevealed && isCorrect) {
                                         Icon(
                                             imageVector = Icons.Outlined.CheckCircle,
                                             contentDescription = null,
@@ -293,22 +286,97 @@ fun TestScreen(
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
-                                    if (showWrong) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Cancel,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = MaterialTheme.colorScheme.error
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
+                        } else {
+                            // 单选题 / 多选题：可点击选项
+                            question.options.forEachIndexed { optionIndex, option ->
+                                val isSelected = optionIndex in selectedSet
+                                val isCorrect = optionIndex in question.correctIndices
+                                val showResult = isRevealed && isCorrect
+                                val showWrong = isSelected && isRevealed && !isCorrect
+
+                                val borderColor = when {
+                                    showResult -> MaterialTheme.colorScheme.primary
+                                    showWrong -> MaterialTheme.colorScheme.error
+                                    isSelected -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.outlineVariant
+                                }
+
+                                val bgColor = when {
+                                    showResult -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    showWrong -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                                    isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                    else -> MaterialTheme.colorScheme.surface
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(AppShapes.small)
+                                        .background(bgColor)
+                                        .border(
+                                            width = 1.dp,
+                                            color = borderColor,
+                                            shape = AppShapes.small
+                                        )
+                                        .clickable {
+                                            if (!isRevealed) {
+                                                viewModel.toggleAnswer(currentIndex, optionIndex, isSingleChoice)
+                                            }
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (isSingleChoice) {
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    } else {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = null,
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    val optionLetter = ('A' + optionIndex).toString()
+                                    Text(
+                                        text = "$optionLetter. $option",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Box(
+                                        modifier = Modifier.size(24.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (showResult) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.CheckCircle,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        if (showWrong) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Cancel,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(10.dp)
-                            )
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
                         }
 
-                        if (!isRevealed && selectedSet.isNotEmpty() && !directAnswer) {
+                        if (!isFillBlank && !isRevealed && selectedSet.isNotEmpty() && !directAnswer) {
                             Button(
                                 onClick = { viewModel.revealAnswer(currentIndex) },
                                 modifier = Modifier.fillMaxWidth(),

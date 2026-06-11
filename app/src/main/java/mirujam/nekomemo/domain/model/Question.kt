@@ -6,5 +6,5 @@ data class Question(
     val text: String,
     val options: List<String>,
     val correctIndices: List<Int>,
-    val type: String
+    val type: QuestionType
 )

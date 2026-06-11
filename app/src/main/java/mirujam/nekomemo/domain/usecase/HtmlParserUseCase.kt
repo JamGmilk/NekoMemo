@@ -2,6 +2,7 @@ package mirujam.nekomemo.domain.usecase
 
 import mirujam.nekomemo.domain.model.ExtractedQuestion
 import mirujam.nekomemo.domain.model.ExtractedQuestionBank
+import mirujam.nekomemo.domain.model.QuestionType
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import timber.log.Timber
@@ -50,7 +51,7 @@ class HtmlParserUseCase @Inject constructor() {
                 val type = parseQuestionType(div)
 
                 when (type) {
-                    "Single Choice", "Multiple Choice" -> {
+                    QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE, QuestionType.TRUE_FALSE -> {
                         val content = ExtractedQuestion.sanitizeContent(parseQuestionContent(div))
                         val options = parseOptions(div)
                         val correctAnswer = parseCorrectAnswer(div)
@@ -71,7 +72,7 @@ class HtmlParserUseCase @Inject constructor() {
                             skippedCount++
                         }
                     }
-                    "Fill in the Blank" -> {
+                    QuestionType.FILL_BLANK -> {
                         val content = ExtractedQuestion.sanitizeContent(parseQuestionContent(div))
                         val fillAnswers = parseFillBlankAnswers(div)
                         val correctAnswer = fillAnswers.joinToString("; ")
@@ -117,17 +118,36 @@ class HtmlParserUseCase @Inject constructor() {
         )
     }
 
-    private fun parseQuestionType(div: org.jsoup.nodes.Element): String {
+    private fun parseQuestionType(div: org.jsoup.nodes.Element): QuestionType {
         val typeSpan = div.select("span.colorShallow").first()
-        val typeText = typeSpan?.text()?.trim() ?: return "Unknown"
+        val typeText = typeSpan?.text()?.trim() ?: return inferTypeFromStructure(div)
         return when {
-            typeText.contains("单选题") -> "Single Choice"
-            typeText.contains("多选题") -> "Multiple Choice"
-            typeText.contains("判断题") -> "True/False"
-            typeText.contains("填空题") -> "Fill in the Blank"
-            typeText.contains("简答题") -> "Short Answer"
-            else -> "Unknown"
+            typeText.contains("单选题") -> QuestionType.SINGLE_CHOICE
+            typeText.contains("多选题") -> QuestionType.MULTIPLE_CHOICE
+            typeText.contains("判断题") -> QuestionType.TRUE_FALSE
+            typeText.contains("填空题") -> QuestionType.FILL_BLANK
+            typeText.contains("简答题") -> QuestionType.SHORT_ANSWER
+            else -> inferTypeFromStructure(div)
         }
+    }
+
+    /**
+     * 当 HTML 中没有明确的题型标识时，从数据结构推断题型：
+     * - 有 dl.mark_fill（填空答案区）→ 填空题
+     * - 正确答案有多个字母 → 多选题
+     * - 正确答案只有一个字母 → 单选题
+     */
+    private fun inferTypeFromStructure(div: org.jsoup.nodes.Element): QuestionType {
+        // 有填空答案区 → 填空题
+        if (div.select("dl.mark_fill dd.rightAnswerContent").isNotEmpty()) {
+            return QuestionType.FILL_BLANK
+        }
+        // 从正确答案推断
+        val correctAnswer = parseCorrectAnswer(div)
+        if (correctAnswer.length > 1) {
+            return QuestionType.MULTIPLE_CHOICE
+        }
+        return QuestionType.SINGLE_CHOICE
     }
 
     private fun parseQuestionContent(div: org.jsoup.nodes.Element): String {

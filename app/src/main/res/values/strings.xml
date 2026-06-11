@@ -100,6 +100,7 @@
     <string name="detail_edit_question_dialog_title">编辑题目</string>
     <string name="detail_question_text_label">题目内容</string>
     <string name="detail_option_label">选项 %1$d</string>
+    <string name="detail_answer_label">答案 %1$d</string>
     <string name="detail_remove_last_option">移除最后一项</string>
     <string name="detail_add_option">添加选项</string>
     <string name="detail_test_config_title">测试配置</string>

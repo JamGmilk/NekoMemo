@@ -188,6 +188,75 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
 
 val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        // Add type column with placeholder default first
         db.execSQL("ALTER TABLE `questions` ADD COLUMN `type` TEXT NOT NULL DEFAULT 'Single Choice'")
+
+        // Infer type from correctIndices for existing data
+        // correctIndices is stored as JSON array, e.g. "[0]" or "[0,2]"
+        val cursor = db.query("SELECT `id`, `correctIndices` FROM `questions`")
+        while (cursor.moveToNext()) {
+            val id = cursor.getLong(0)
+            val indicesJson = cursor.getString(1)
+            val inferredType = try {
+                val arr = org.json.JSONArray(indicesJson)
+                if (arr.length() > 1) "Multiple Choice" else "Single Choice"
+            } catch (e: Exception) {
+                "Single Choice"
+            }
+            if (inferredType != "Single Choice") {
+                db.execSQL(
+                    "UPDATE `questions` SET `type` = ? WHERE `id` = ?",
+                    arrayOf<Any?>(inferredType, id)
+                )
+            }
+        }
+        cursor.close()
+    }
+}
+
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // 创建新表，type 列改为 INTEGER
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `questions_temp` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `questionBankId` INTEGER NOT NULL,
+                `text` TEXT NOT NULL,
+                `options` TEXT NOT NULL,
+                `correctIndices` TEXT NOT NULL,
+                `type` INTEGER NOT NULL DEFAULT 1,
+                FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        // 迁移数据：将 TEXT type 转换为 INTEGER
+        // "Single Choice" → 1, "Multiple Choice" → 2, "True/False" → 3, "Fill in the Blank" → 4, "Short Answer" → 5
+        val cursor = db.query("SELECT `id`, `questionBankId`, `text`, `options`, `correctIndices`, `type` FROM `questions`")
+        while (cursor.moveToNext()) {
+            val id = cursor.getLong(0)
+            val questionBankId = cursor.getLong(1)
+            val text = cursor.getString(2)
+            val options = cursor.getString(3)
+            val correctIndices = cursor.getString(4)
+            val typeStr = cursor.getString(5)
+
+            val typeCode = when {
+                typeStr.contains("Multiple Choice", ignoreCase = true) -> 2
+                typeStr.contains("True/False", ignoreCase = true) -> 3
+                typeStr.contains("Fill in the Blank", ignoreCase = true) -> 4
+                typeStr.contains("Short Answer", ignoreCase = true) -> 5
+                else -> 1 // Single Choice
+            }
+
+            db.execSQL(
+                "INSERT INTO `questions_temp` (`id`, `questionBankId`, `text`, `options`, `correctIndices`, `type`) VALUES (?, ?, ?, ?, ?, ?)",
+                arrayOf<Any?>(id, questionBankId, text, options, correctIndices, typeCode)
+            )
+        }
+        cursor.close()
+
+        db.execSQL("DROP TABLE IF EXISTS `questions`")
+        db.execSQL("ALTER TABLE `questions_temp` RENAME TO `questions`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_questions_questionBankId` ON `questions` (`questionBankId`)")
     }
 }

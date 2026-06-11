@@ -1,5 +1,6 @@
 package mirujam.nekomemo.ui.model
 
+import mirujam.nekomemo.domain.model.QuestionType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -8,9 +9,9 @@ class ScoreModelTest {
     @Test
     fun calculate_countsCorrectWrongAndUnanswered() {
         val questions = listOf(
-            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B"), correctIndices = listOf(0)),
-            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndices = listOf(1)),
-            QuestionUiModel(id = 3, text = "q3", options = listOf("A", "B"), correctIndices = listOf(1))
+            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B"), correctIndices = listOf(0), type = QuestionType.SINGLE_CHOICE),
+            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndices = listOf(1), type = QuestionType.SINGLE_CHOICE),
+            QuestionUiModel(id = 3, text = "q3", options = listOf("A", "B"), correctIndices = listOf(1), type = QuestionType.SINGLE_CHOICE)
         )
 
         val score = ScoreModel.calculate(
@@ -39,8 +40,8 @@ class ScoreModelTest {
     @Test
     fun calculate_handlesMultipleChoice() {
         val questions = listOf(
-            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B", "C"), correctIndices = listOf(0, 2)),
-            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndices = listOf(0, 1))
+            QuestionUiModel(id = 1, text = "q1", options = listOf("A", "B", "C"), correctIndices = listOf(0, 2), type = QuestionType.MULTIPLE_CHOICE),
+            QuestionUiModel(id = 2, text = "q2", options = listOf("A", "B"), correctIndices = listOf(0, 1), type = QuestionType.MULTIPLE_CHOICE)
         )
 
         // Correct multi-select

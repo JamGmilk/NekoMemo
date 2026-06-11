@@ -2,6 +2,7 @@ package mirujam.nekomemo.ui.model
 
 import androidx.compose.runtime.Immutable
 import mirujam.nekomemo.domain.model.Question
+import mirujam.nekomemo.domain.model.QuestionType
 
 @Immutable
 data class QuestionUiModel(
@@ -9,7 +10,7 @@ data class QuestionUiModel(
     val text: String,
     val options: List<String>,
     val correctIndices: List<Int>,
-    val type: String
+    val type: QuestionType
 ) {
     companion object {
         fun fromDomainModel(question: Question): QuestionUiModel = QuestionUiModel(
@@ -41,11 +42,16 @@ data class ScoreModel(
             var wrong = 0
             var unanswered = 0
             questions.forEachIndexed { index, question ->
-                val selected = selectedAnswers[index]
-                when {
-                    selected == null || selected.isEmpty() -> unanswered++
-                    selected == question.correctIndices.toSet() -> correct++
-                    else -> wrong++
+                if (question.type == QuestionType.FILL_BLANK) {
+                    // 填空题答案直接可见，默认算正确
+                    correct++
+                } else {
+                    val selected = selectedAnswers[index]
+                    when {
+                        selected == null || selected.isEmpty() -> unanswered++
+                        selected == question.correctIndices.toSet() -> correct++
+                        else -> wrong++
+                    }
                 }
             }
             val total = questions.size

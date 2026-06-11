@@ -19,6 +19,7 @@ import mirujam.nekomemo.data.mapper.toDomainQuestionModels
 import mirujam.nekomemo.data.mapper.toEntity
 import mirujam.nekomemo.domain.model.Question
 import mirujam.nekomemo.domain.model.QuestionBank
+import mirujam.nekomemo.domain.model.QuestionType
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -80,7 +81,7 @@ class QuestionRepository @Inject constructor(
         }
     }
 
-    suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: String) {
+    suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: QuestionType) {
         questionDao.updateQuestion(
             QuestionEntity(
                 id = id,

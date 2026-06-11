@@ -5,6 +5,7 @@ import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.domain.model.Question
 import mirujam.nekomemo.domain.model.QuestionBank
+import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.domain.validator.DataValidator
 import org.json.JSONArray
 import org.json.JSONObject
@@ -37,7 +38,7 @@ class BankExportImportUseCase @Inject constructor(
             qJson.put("text", q.text)
             qJson.put("options", JSONArray(q.options))
             qJson.put("correctIndices", JSONArray(q.correctIndices))
-            qJson.put("type", q.type)
+            qJson.put("type", q.type.name)
             questionsArray.put(qJson)
         }
         json.put("questions", questionsArray)
@@ -161,7 +162,7 @@ class BankExportImportUseCase @Inject constructor(
             text = text,
             options = options,
             correctIndices = correctIndices,
-            type = qJson.optString("type", "Single Choice").ifBlank { "Single Choice" }
+            type = QuestionType.fromLegacyString(qJson.optString("type", "SINGLE_CHOICE").ifBlank { "SINGLE_CHOICE" })
         )
     }
 
