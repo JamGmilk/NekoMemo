@@ -243,27 +243,31 @@ fun TestScreen(
                         val isFillBlank = question.type == QuestionType.FILL_BLANK
 
                         if (isFillBlank) {
-                            // 填空题：显示答案文本，只读
+                            // 填空题：点击显示/隐藏答案文本，序号始终可见
+                            val revealedOptions = selectedAnswers[currentIndex] ?: emptySet()
                             question.options.forEachIndexed { optionIndex, answer ->
-                                val isCorrect = optionIndex in question.correctIndices
+                                val isRevealed = optionIndex in revealedOptions
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(AppShapes.small)
                                         .background(
-                                            if (isRevealed && isCorrect)
+                                            if (isRevealed)
                                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                                             else
                                                 MaterialTheme.colorScheme.surface
                                         )
                                         .border(
                                             width = 1.dp,
-                                            color = if (isRevealed && isCorrect)
+                                            color = if (isRevealed)
                                                 MaterialTheme.colorScheme.primary
                                             else
                                                 MaterialTheme.colorScheme.outlineVariant,
                                             shape = AppShapes.small
                                         )
+                                        .clickable {
+                                            viewModel.toggleAnswer(currentIndex, optionIndex)
+                                        }
                                         .padding(horizontal = 16.dp, vertical = 14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -274,11 +278,11 @@ fun TestScreen(
                                         modifier = Modifier.padding(end = 8.dp)
                                     )
                                     Text(
-                                        text = answer,
+                                        text = if (isRevealed) answer else "···",
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    if (isRevealed && isCorrect) {
+                                    if (isRevealed) {
                                         Icon(
                                             imageVector = Icons.Outlined.CheckCircle,
                                             contentDescription = null,
