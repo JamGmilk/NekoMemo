@@ -46,6 +46,9 @@ class SettingsViewModel @Inject constructor(
     val directAnswer: StateFlow<Boolean> = testPreferenceRepository.directAnswer
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val autoNextOnCorrect: StateFlow<Boolean> = testPreferenceRepository.autoNextOnCorrect
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -70,6 +73,12 @@ class SettingsViewModel @Inject constructor(
     fun setDirectAnswer(enabled: Boolean) {
         viewModelScope.launch {
             testPreferenceRepository.setDirectAnswer(enabled)
+        }
+    }
+
+    fun setAutoNextOnCorrect(enabled: Boolean) {
+        viewModelScope.launch {
+            testPreferenceRepository.setAutoNextOnCorrect(enabled)
         }
     }
 

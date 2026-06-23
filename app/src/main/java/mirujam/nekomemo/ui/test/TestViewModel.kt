@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Question
@@ -23,6 +25,9 @@ import mirujam.nekomemo.ui.model.ScoreModel
 import mirujam.nekomemo.ui.model.UiText
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+
+private const val AUTO_NEXT_DELAY_MS = 300L
 
 @HiltViewModel
 class TestViewModel @Inject constructor(
@@ -58,6 +63,11 @@ class TestViewModel @Inject constructor(
 
     val directAnswer: StateFlow<Boolean> = testPreferenceRepository.directAnswer
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val autoNextOnCorrect: StateFlow<Boolean> = testPreferenceRepository.autoNextOnCorrect
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private var autoNextJob: Job? = null
 
     private val _shuffledQuestions = MutableStateFlow<List<QuestionUiModel>>(emptyList())
 
@@ -139,15 +149,32 @@ class TestViewModel @Inject constructor(
 
     fun revealAnswer(questionIndex: Int) {
         _revealedQuestions.update { it.toMutableSet().apply { add(questionIndex) } }
+        scheduleAutoNextIfCorrect(questionIndex)
+    }
+
+    private fun scheduleAutoNextIfCorrect(questionIndex: Int) {
+        autoNextJob?.cancel()
+        if (!autoNextOnCorrect.value) return
+        val questions = activeQuestions.value
+        val question = questions.getOrNull(questionIndex) ?: return
+        val selected = _selectedAnswers.value[questionIndex]
+        if (selected.isNullOrEmpty()) return
+        if (selected != question.correctIndices.toSet()) return
+        autoNextJob = viewModelScope.launch {
+            delay(AUTO_NEXT_DELAY_MS.milliseconds)
+            nextQuestion(questions.size)
+        }
     }
 
     fun nextQuestion(total: Int) {
+        autoNextJob?.cancel()
         if (_currentIndex.value < total - 1) {
             _currentIndex.value += 1
         }
     }
 
     fun previousQuestion() {
+        autoNextJob?.cancel()
         if (_currentIndex.value > 0) {
             _currentIndex.value -= 1
         }
@@ -167,6 +194,7 @@ class TestViewModel @Inject constructor(
     }
 
     fun resetTest() {
+        autoNextJob?.cancel()
         _selectedAnswers.value = emptyMap()
         _revealedQuestions.value = emptySet()
         _currentIndex.value = 0

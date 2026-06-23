@@ -15,15 +15,26 @@ class TestPreferenceRepository @Inject constructor(
 ) {
     companion object {
         val DIRECT_ANSWER_KEY = booleanPreferencesKey("direct_answer")
+        val AUTO_NEXT_ON_CORRECT_KEY = booleanPreferencesKey("auto_next_on_correct")
     }
 
     val directAnswer: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[DIRECT_ANSWER_KEY] ?: false
     }
 
+    val autoNextOnCorrect: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[AUTO_NEXT_ON_CORRECT_KEY] ?: false
+    }
+
     suspend fun setDirectAnswer(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[DIRECT_ANSWER_KEY] = enabled
+        }
+    }
+
+    suspend fun setAutoNextOnCorrect(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[AUTO_NEXT_ON_CORRECT_KEY] = enabled
         }
     }
 }

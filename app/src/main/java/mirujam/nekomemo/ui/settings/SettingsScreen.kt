@@ -42,6 +42,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -106,6 +107,7 @@ fun SettingsScreen(
     val totalQuestionCount by viewModel.totalQuestionCount.collectAsState()
     val currentTheme by viewModel.themeMode.collectAsState()
     val directAnswer by viewModel.directAnswer.collectAsState()
+    val autoNextOnCorrect by viewModel.autoNextOnCorrect.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val categoryError by viewModel.categoryError.collectAsState()
 
@@ -264,7 +266,9 @@ fun SettingsScreen(
 
             TestSettingsCard(
                 directAnswer = directAnswer,
-                onDirectAnswerChange = { viewModel.setDirectAnswer(it) }
+                onDirectAnswerChange = { viewModel.setDirectAnswer(it) },
+                autoNextOnCorrect = autoNextOnCorrect,
+                onAutoNextOnCorrectChange = { viewModel.setAutoNextOnCorrect(it) }
             )
 
             StatisticsCard(
@@ -454,6 +458,8 @@ private fun LanguageCard(
 private fun TestSettingsCard(
     directAnswer: Boolean,
     onDirectAnswerChange: (Boolean) -> Unit,
+    autoNextOnCorrect: Boolean,
+    onAutoNextOnCorrectChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsCard(
@@ -461,37 +467,75 @@ private fun TestSettingsCard(
         icon = Icons.Outlined.Quiz,
         modifier = modifier
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = directAnswer,
-                    onValueChange = onDirectAnswerChange,
-                    role = Role.Switch
-                )
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = directAnswer,
+                        onValueChange = onDirectAnswerChange,
+                        role = Role.Switch
+                    )
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.settings_direct_answer),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = stringResource(R.string.settings_direct_answer_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_direct_answer),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_direct_answer_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = directAnswer,
+                    onCheckedChange = null
                 )
             }
-            Switch(
-                checked = directAnswer,
-                onCheckedChange = null
-            )
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = autoNextOnCorrect,
+                        onValueChange = onAutoNextOnCorrectChange,
+                        role = Role.Switch
+                    )
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_auto_next_on_correct),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_auto_next_on_correct_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = autoNextOnCorrect,
+                    onCheckedChange = null,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
         }
     }
 }

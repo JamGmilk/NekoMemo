@@ -157,6 +157,8 @@
     <string name="settings_test_settings">Test Settings</string>
     <string name="settings_direct_answer">Instant Grading (Single Choice)</string>
     <string name="settings_direct_answer_desc">Check the answer immediately when a single choice option is clicked.</string>
+    <string name="settings_auto_next_on_correct">Auto Next on Correct</string>
+    <string name="settings_auto_next_on_correct_desc">After checking the answer, automatically advance to the next question if correct.</string>
     <string name="settings_statistics">Statistics</string>
     <string name="settings_banks">Banks</string>
     <string name="settings_questions">Questions</string>
