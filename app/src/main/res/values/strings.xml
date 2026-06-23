@@ -175,8 +175,10 @@
     <string name="settings_category_name">分类名称</string>
     <string name="settings_rename_category">重命名</string>
     <string name="settings_delete_category">删除</string>
-    <string name="settings_delete_category_confirm">确定要删除分类「%1$s」吗？</string>
+    <string name="settings_delete_category_confirm">确定要删除分类「%1$s」吗？该分类下的题库将移至「通用」分类。</string>
+    <string name="settings_delete_category_confirm_empty">确定要删除分类「%1$s」吗？</string>
     <string name="settings_delete_category_error">无法删除仍有题库的分类</string>
+    <string name="settings_delete_category_default_error">无法删除通用分类</string>
     <string name="settings_category_already_exists">分类已存在</string>
     <string name="settings_category_empty_name">分类名称不能为空</string>
     <string name="settings_category_name_exists">分类名称已存在</string>

@@ -33,14 +33,7 @@ class CategoryRepository @Inject constructor(
     suspend fun getCategoryByName(name: String): Category? =
         categoryDao.getCategoryByName(name)?.toDomainModel()
 
-    suspend fun isDefaultCategory(categoryId: Long): Boolean {
-        val category = categoryDao.getCategoryById(categoryId) ?: return false
-        return category.name == DEFAULT_CATEGORY_NAME
-    }
-
-    fun getDefaultCategoryName(): String = DEFAULT_CATEGORY_NAME
-
-    suspend fun isReservedCategoryName(name: String): Boolean {
+    fun isReservedCategoryName(name: String): Boolean {
         return name.uppercase() == DEFAULT_CATEGORY_NAME
     }
 
@@ -58,23 +51,6 @@ class CategoryRepository @Inject constructor(
         }
         val id = categoryDao.insertCategory(CategoryEntity(name = trimmedName))
         return Result.success(id)
-    }
-
-    suspend fun updateCategory(oldName: String, newName: String): Result<Unit> {
-        val trimmedNewName = newName.trim()
-        if (!DataValidator.isCategoryValid(trimmedNewName)) {
-            return Result.failure(IllegalArgumentException("Invalid category name"))
-        }
-        if (isReservedCategoryName(trimmedNewName)) {
-            return Result.failure(IllegalArgumentException("Cannot use reserved category name"))
-        }
-        val existing = categoryDao.getCategoryByName(trimmedNewName)
-        if (existing != null) {
-            return Result.failure(IllegalArgumentException("Category name already exists"))
-        }
-        val oldCategory = categoryDao.getCategoryByName(oldName) ?: return Result.failure(IllegalArgumentException("Category not found"))
-        categoryDao.updateCategory(oldCategory.copy(name = trimmedNewName))
-        return Result.success(Unit)
     }
 
     suspend fun renameCategory(categoryId: Long, newName: String): Result<Unit> {
@@ -98,25 +74,16 @@ class CategoryRepository @Inject constructor(
     }
 
     suspend fun deleteCategory(categoryId: Long): Result<Unit> {
-        val category = categoryDao.getCategoryById(categoryId) ?: return Result.failure(IllegalArgumentException("Category not found"))
+        val category = categoryDao.getCategoryById(categoryId) ?: return Result.failure(IllegalStateException("Category not found"))
         if (category.name == DEFAULT_CATEGORY_NAME) {
             return Result.failure(IllegalStateException("Cannot delete default category"))
         }
-        val bankCount = categoryDao.getBankCountByCategoryId(categoryId)
-        if (bankCount > 0) {
-            return Result.failure(IllegalStateException("Cannot delete category with existing banks"))
+        val general = categoryDao.getCategoryByName(DEFAULT_CATEGORY_NAME)
+        if (general != null && general.id != categoryId) {
+            questionBankDao.reassignCategory(oldCategoryId = categoryId, newCategoryId = general.id)
         }
         categoryDao.deleteCategory(category)
         return Result.success(Unit)
-    }
-
-    suspend fun canDeleteCategory(categoryId: Long): Boolean {
-        val category = categoryDao.getCategoryById(categoryId) ?: return false
-        if (category.name == DEFAULT_CATEGORY_NAME) {
-            return false
-        }
-        val bankCount = categoryDao.getBankCountByCategoryId(categoryId)
-        return bankCount == 0
     }
 
     suspend fun getBankCountByCategoryId(categoryId: Long): Int =

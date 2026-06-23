@@ -78,8 +78,8 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.BuildConfig
 import mirujam.nekomemo.R
-import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.preferences.ThemeMode
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.validator.DataValidator
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
@@ -110,6 +110,7 @@ fun SettingsScreen(
     val autoNextOnCorrect by viewModel.autoNextOnCorrect.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val categoryError by viewModel.categoryError.collectAsState()
+    val bankCountsByCategory by viewModel.bankCountsByCategory.collectAsState()
 
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
@@ -139,9 +140,14 @@ fun SettingsScreen(
                     selectedCategory = null
                     snackbarMessage = context.getString(R.string.settings_category_deleted, event.name)
                     snackbarTrigger++
+                    viewModel.refreshBankCountsByCategory()
                 }
                 is CategoryOperationResult.Error -> {
-                    snackbarMessage = event.message
+                    showDeleteCategoryDialog = false
+                    showAddCategoryDialog = false
+                    showRenameCategoryDialog = false
+                    selectedCategory = null
+                    snackbarMessage = event.message.asString(context)
                     snackbarTrigger++
                 }
             }
@@ -150,10 +156,14 @@ fun SettingsScreen(
 
     LaunchedEffect(categoryError) {
         categoryError?.let { error ->
-            snackbarMessage = error
+            snackbarMessage = error.asString(context)
             snackbarTrigger++
             viewModel.clearCategoryError()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshBankCountsByCategory()
     }
 
     if (showClearDialog) {
@@ -219,6 +229,12 @@ fun SettingsScreen(
     }
 
     if (showDeleteCategoryDialog && selectedCategory != null) {
+        val hasBanks = (bankCountsByCategory[selectedCategory!!.id] ?: 0) > 0
+        val dialogMessage = if (hasBanks) {
+            stringResource(R.string.settings_delete_category_confirm, selectedCategory!!.name)
+        } else {
+            stringResource(R.string.settings_delete_category_confirm_empty, selectedCategory!!.name)
+        }
         DialogWithIcon(
             onDismiss = {
                 showDeleteCategoryDialog = false
@@ -233,7 +249,7 @@ fun SettingsScreen(
             isDestructive = true,
             dismissText = stringResource(R.string.common_cancel),
             content = {
-                Text(stringResource(R.string.settings_delete_category_confirm, selectedCategory!!.name))
+                Text(dialogMessage)
             }
         )
     }
@@ -423,7 +439,7 @@ private fun LanguageCard(
                                 data = "package:${context.packageName}".toUri()
                             }
                             context.startActivity(intent)
-                        } catch (e: ActivityNotFoundException) {
+                        } catch (_: ActivityNotFoundException) {
                             val fallbackIntent = Intent(Settings.ACTION_LOCALE_SETTINGS)
                             context.startActivity(fallbackIntent)
                         }

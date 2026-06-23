@@ -1,5 +1,6 @@
 package mirujam.nekomemo.ui.settings
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,20 +12,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.preferences.TestPreferenceRepository
 import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.data.preferences.ThemePreferenceRepository
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
+import mirujam.nekomemo.ui.model.UiText
 import javax.inject.Inject
 
 sealed class CategoryOperationResult {
     data class Added(val name: String) : CategoryOperationResult()
     data class Renamed(val name: String) : CategoryOperationResult()
     data class Deleted(val name: String) : CategoryOperationResult()
-    data class Error(val message: String) : CategoryOperationResult()
+    data class Error(val message: UiText) : CategoryOperationResult()
 }
+
+private fun categoryErrorMessage(@StringRes resId: Int, vararg args: Any): CategoryOperationResult.Error =
+    CategoryOperationResult.Error(UiText.StringResource(resId, arrayOf(*args)))
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -52,8 +58,11 @@ class SettingsViewModel @Inject constructor(
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _categoryError = MutableStateFlow<String?>(null)
-    val categoryError: StateFlow<String?> = _categoryError.asStateFlow()
+    private val _bankCountsByCategory = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val bankCountsByCategory: StateFlow<Map<Long, Int>> = _bankCountsByCategory.asStateFlow()
+
+    private val _categoryError = MutableStateFlow<UiText?>(null)
+    val categoryError: StateFlow<UiText?> = _categoryError.asStateFlow()
 
     private val _categoryEvent = Channel<CategoryOperationResult>(Channel.BUFFERED)
     val categoryEvent = _categoryEvent.receiveAsFlow()
@@ -82,6 +91,16 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun refreshBankCountsByCategory() {
+        viewModelScope.launch {
+            val current = categoryRepository.getAllCategoriesSync()
+            val counts = current.associate { category ->
+                category.id to categoryRepository.getBankCountByCategoryId(category.id)
+            }
+            _bankCountsByCategory.value = counts
+        }
+    }
+
     fun clearAllData() {
         viewModelScope.launch {
             repository.deleteAllData()
@@ -91,9 +110,10 @@ class SettingsViewModel @Inject constructor(
     fun addCategory(name: String) {
         val trimmedName = name.trim()
         if (trimmedName.isBlank()) {
-            _categoryError.value = "Category name cannot be empty"
+            val err = categoryErrorMessage(R.string.settings_category_empty_name)
+            _categoryError.value = err.message
             viewModelScope.launch {
-                _categoryEvent.send(CategoryOperationResult.Error("Category name cannot be empty"))
+                _categoryEvent.send(err)
             }
             return
         }
@@ -103,8 +123,9 @@ class SettingsViewModel @Inject constructor(
                 _categoryError.value = null
                 _categoryEvent.send(CategoryOperationResult.Added(trimmedName))
             }.onFailure { error ->
-                _categoryError.value = error.message
-                _categoryEvent.send(CategoryOperationResult.Error(error.message ?: "Unknown error"))
+                val err = error.toCategoryError()
+                _categoryError.value = err.message
+                _categoryEvent.send(err)
             }
         }
     }
@@ -112,9 +133,10 @@ class SettingsViewModel @Inject constructor(
     fun renameCategory(categoryId: Long, newName: String) {
         val trimmedNewName = newName.trim()
         if (trimmedNewName.isBlank()) {
-            _categoryError.value = "Category name cannot be empty"
+            val err = categoryErrorMessage(R.string.settings_category_empty_name)
+            _categoryError.value = err.message
             viewModelScope.launch {
-                _categoryEvent.send(CategoryOperationResult.Error("Category name cannot be empty"))
+                _categoryEvent.send(err)
             }
             return
         }
@@ -124,8 +146,9 @@ class SettingsViewModel @Inject constructor(
                 _categoryError.value = null
                 _categoryEvent.send(CategoryOperationResult.Renamed(trimmedNewName))
             }.onFailure { error ->
-                _categoryError.value = error.message
-                _categoryEvent.send(CategoryOperationResult.Error(error.message ?: "Unknown error"))
+                val err = error.toCategoryError()
+                _categoryError.value = err.message
+                _categoryEvent.send(err)
             }
         }
     }
@@ -139,13 +162,27 @@ class SettingsViewModel @Inject constructor(
                 _categoryError.value = null
                 _categoryEvent.send(CategoryOperationResult.Deleted(oldName))
             }.onFailure { error ->
-                _categoryError.value = error.message
-                _categoryEvent.send(CategoryOperationResult.Error(error.message ?: "Unknown error"))
+                val err = error.toCategoryError()
+                _categoryError.value = err.message
+                _categoryEvent.send(err)
             }
         }
     }
 
     fun clearCategoryError() {
         _categoryError.value = null
+    }
+
+    private fun Throwable.toCategoryError(): CategoryOperationResult.Error {
+        val message = this.message.orEmpty()
+        @StringRes val resId = when {
+            message.contains("default category", ignoreCase = true) -> R.string.settings_delete_category_default_error
+            message.contains("existing banks", ignoreCase = true) -> R.string.settings_delete_category_error
+            message.contains("reserved", ignoreCase = true) -> R.string.settings_category_reserved_name
+            message.contains("already exists", ignoreCase = true) -> R.string.settings_category_name_exists
+            message.contains("not found", ignoreCase = true) -> R.string.settings_category_name_exists
+            else -> R.string.settings_category_name_exists
+        }
+        return categoryErrorMessage(resId)
     }
 }

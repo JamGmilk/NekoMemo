@@ -185,8 +185,10 @@
     <string name="settings_category_name">Category Name</string>
     <string name="settings_rename_category">Rename</string>
     <string name="settings_delete_category">Delete</string>
-    <string name="settings_delete_category_confirm">Delete category \'%1$s\'?</string>
+    <string name="settings_delete_category_confirm">Delete category \'%1$s\'? Banks in this category will be moved to General.</string>
+    <string name="settings_delete_category_confirm_empty">Delete category \'%1$s\'?</string>
     <string name="settings_delete_category_error">Cannot delete category with existing banks</string>
+    <string name="settings_delete_category_default_error">Cannot delete the General category</string>
     <string name="settings_category_already_exists">Category already exists</string>
     <string name="settings_category_empty_name">Category name cannot be empty</string>
     <string name="settings_category_name_exists">Category name already exists</string>

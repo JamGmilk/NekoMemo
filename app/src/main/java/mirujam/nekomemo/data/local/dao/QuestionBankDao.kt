@@ -24,6 +24,9 @@ interface QuestionBankDao {
     @Query("SELECT COUNT(*) FROM question_banks WHERE categoryId = :categoryId")
     suspend fun getBankCountByCategoryId(categoryId: Long): Int
 
+    @Query("UPDATE question_banks SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
+    suspend fun reassignCategory(oldCategoryId: Long, newCategoryId: Long)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBank(bank: QuestionBankEntity): Long
 
