@@ -26,6 +26,7 @@ import timber.log.Timber
 import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -54,8 +55,19 @@ class LibraryViewModel @Inject constructor(
     private val _sortMode = MutableStateFlow(SortMode.DATE_DESC)
     val sortMode: StateFlow<SortMode> = _sortMode.asStateFlow()
 
+    // Use a Collator-based Comparator for QuestionBank.title so that Chinese/Japanese/Korean
+    // characters are sorted in a locale-aware order. A raw Collator is a Comparator<Any> and
+    // would otherwise throw ClassCastException when applied to QuestionBank objects.
+    private val titleComparator: Comparator<QuestionBank> = run {
+        val collator = Collator.getInstance(Locale.getDefault()).apply {
+            // PRIMARY strength ignores accents/case and works well for CJK locale-aware sorting.
+            strength = Collator.PRIMARY
+        }
+        Comparator { a, b -> collator.compare(a.title, b.title) }
+    }
+
     val filteredBanks: StateFlow<List<QuestionBank>> = combine(
-        banks, _searchQuery.debounce(300), _sortMode, categoryMap
+        banks, _searchQuery.debounce(300.milliseconds), _sortMode, categoryMap
     ) { bankList, query, sort, catMap ->
         val filtered = if (query.isBlank()) bankList
         else bankList.filter { bank ->
@@ -65,8 +77,8 @@ class LibraryViewModel @Inject constructor(
         when (sort) {
             SortMode.DATE_DESC -> filtered.sortedByDescending { it.createdAt }
             SortMode.DATE_ASC -> filtered.sortedBy { it.createdAt }
-            SortMode.TITLE_ASC -> filtered.sortedWith(Collator.getInstance(Locale.getDefault()))
-            SortMode.TITLE_DESC -> filtered.sortedWith(Collator.getInstance(Locale.getDefault())).reversed()
+            SortMode.TITLE_ASC -> filtered.sortedWith(titleComparator)
+            SortMode.TITLE_DESC -> filtered.sortedWith(titleComparator.reversed())
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
