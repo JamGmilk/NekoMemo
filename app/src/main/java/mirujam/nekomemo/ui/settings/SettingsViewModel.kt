@@ -1,5 +1,6 @@
 package mirujam.nekomemo.ui.settings
 
+import android.annotation.SuppressLint
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -20,6 +22,8 @@ import mirujam.nekomemo.data.preferences.ThemePreferenceRepository
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.ui.model.UiText
+import java.text.Collator
+import java.util.Locale
 import javax.inject.Inject
 
 sealed class CategoryOperationResult {
@@ -56,6 +60,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
+        .map { list -> sortCategoriesWithGeneralFirst(list) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _bankCountsByCategory = MutableStateFlow<Map<Long, Int>>(emptyMap())
@@ -184,5 +189,21 @@ class SettingsViewModel @Inject constructor(
             else -> R.string.settings_category_name_exists
         }
         return categoryErrorMessage(resId)
+    }
+
+    companion object {
+        @SuppressLint("ConstantLocale")
+        private val nameCollator: Collator = Collator.getInstance(Locale.getDefault()).apply {
+            strength = Collator.PRIMARY
+        }
+
+        private val nameComparator: Comparator<Category> = Comparator { a, b ->
+            nameCollator.compare(a.name, b.name)
+        }
+
+        fun sortCategoriesWithGeneralFirst(list: List<Category>): List<Category> {
+            val (general, others) = list.partition { it.isDefault }
+            return general + others.sortedWith(nameComparator)
+        }
     }
 }

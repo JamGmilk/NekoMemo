@@ -12,10 +12,10 @@ import mirujam.nekomemo.data.local.entity.CategoryEntity
 @Dao
 interface CategoryDao {
 
-    @Query("SELECT * FROM categories ORDER BY name ASC")
+    @Query("SELECT * FROM categories ORDER BY name COLLATE LOCALIZED ASC")
     fun getAllCategories(): Flow<List<CategoryEntity>>
 
-    @Query("SELECT * FROM categories ORDER BY name ASC")
+    @Query("SELECT * FROM categories ORDER BY name COLLATE LOCALIZED ASC")
     suspend fun getAllCategoriesSync(): List<CategoryEntity>
 
     @Query("SELECT * FROM categories WHERE id = :id")
