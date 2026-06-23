@@ -38,6 +38,9 @@
         <item quantity="other">%1$d 道题目</item>
     </plurals>
     <string name="library_more_options">更多选项</string>
+    <string name="library_filter_all">全部</string>
+    <string name="library_filter_by_category">按分类筛选</string>
+    <string name="library_sort_and_filter">排序与筛选</string>
 
     <!-- Fetcher -->
     <string name="fetcher_html_source">HTML 源码</string>

@@ -38,6 +38,9 @@
         <item quantity="other">%1$d questions</item>
     </plurals>
     <string name="library_more_options">More options</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_by_category">Filter by category</string>
+    <string name="library_sort_and_filter">Sort &amp; Filter</string>
 
     <!-- Fetcher -->
     <string name="fetcher_html_source">HTML Source</string>

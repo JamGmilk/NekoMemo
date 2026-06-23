@@ -55,6 +55,9 @@ class LibraryViewModel @Inject constructor(
     private val _sortMode = MutableStateFlow(SortMode.DATE_DESC)
     val sortMode: StateFlow<SortMode> = _sortMode.asStateFlow()
 
+    private val _selectedCategoryId = MutableStateFlow<Long?>(null)
+    val selectedCategoryId: StateFlow<Long?> = _selectedCategoryId.asStateFlow()
+
     // Use a Collator-based Comparator for QuestionBank.title so that Chinese/Japanese/Korean
     // characters are sorted in a locale-aware order. A raw Collator is a Comparator<Any> and
     // would otherwise throw ClassCastException when applied to QuestionBank objects.
@@ -67,13 +70,18 @@ class LibraryViewModel @Inject constructor(
     }
 
     val filteredBanks: StateFlow<List<QuestionBank>> = combine(
-        banks, _searchQuery.debounce(300.milliseconds), _sortMode, categoryMap
-    ) { bankList, query, sort, catMap ->
-        val filtered = if (query.isBlank()) bankList
+        banks, _searchQuery.debounce(300.milliseconds), _sortMode, categoryMap, _selectedCategoryId
+    ) { bankList, query, sort, catMap, selectedCategoryId ->
+        val searched = if (query.isBlank()) bankList
         else bankList.filter { bank ->
             bank.title.contains(query, ignoreCase = true) ||
             catMap[bank.categoryId]?.contains(query, ignoreCase = true) == true
         }
+        // Guard against a stale selection (category may have been deleted).
+        val effectiveCategoryId = if (selectedCategoryId != null && catMap.containsKey(selectedCategoryId))
+            selectedCategoryId else null
+        val filtered = if (effectiveCategoryId == null) searched
+        else searched.filter { it.categoryId == effectiveCategoryId }
         when (sort) {
             SortMode.DATE_DESC -> filtered.sortedByDescending { it.createdAt }
             SortMode.DATE_ASC -> filtered.sortedBy { it.createdAt }
@@ -212,5 +220,9 @@ class LibraryViewModel @Inject constructor(
 
     fun setSortMode(mode: SortMode) {
         _sortMode.value = mode
+    }
+
+    fun setSelectedCategory(categoryId: Long?) {
+        _selectedCategoryId.value = categoryId
     }
 }

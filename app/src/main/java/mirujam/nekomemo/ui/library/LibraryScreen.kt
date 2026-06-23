@@ -21,9 +21,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.CloudDownload
@@ -31,10 +35,13 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SortByAlpha
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -82,12 +89,13 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class SortMode(@StringRes val labelResId: Int) {
-    DATE_DESC(R.string.library_sort_newest),
-    DATE_ASC(R.string.library_sort_oldest),
-    TITLE_ASC(R.string.library_sort_az),
-    TITLE_DESC(R.string.library_sort_za)
+enum class SortMode(@StringRes val labelResId: Int, val icon: ImageVector) {
+    DATE_DESC(R.string.library_sort_newest, Icons.Outlined.ArrowDownward),
+    DATE_ASC(R.string.library_sort_oldest, Icons.Outlined.ArrowUpward),
+    TITLE_ASC(R.string.library_sort_az, Icons.Outlined.SortByAlpha),
+    TITLE_DESC(R.string.library_sort_za, Icons.Outlined.SortByAlpha)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,11 +117,14 @@ fun LibraryScreen(
     val filteredBanks by viewModel.filteredBanks.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val categoryMap = remember(categories) { categories.associate { it.id to it } }
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
 
     var showActionMenuFor by remember { mutableStateOf<QuestionBank?>(null) }
     var sortExpanded by remember { mutableStateOf(false) }
+    var sortSubmenuExpanded by remember { mutableStateOf(false) }
+    var filterSubmenuExpanded by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
 
     ExportLauncher(
@@ -188,37 +199,192 @@ fun LibraryScreen(
                         Box {
                             TooltipBox(
                                 positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),
-                                tooltip = { PlainTooltip { Text(stringResource(R.string.library_sort)) } },
+                                tooltip = { PlainTooltip { Text(stringResource(R.string.library_sort_and_filter)) } },
                                 state = rememberTooltipState()
                             ) {
                                 IconButton(onClick = { sortExpanded = true }) {
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Outlined.Sort,
-                                        contentDescription = stringResource(R.string.library_sort)
+                                        imageVector = Icons.Outlined.Tune,
+                                        contentDescription = stringResource(R.string.library_sort_and_filter)
                                     )
                                 }
                             }
                             DropdownMenu(
                                 expanded = sortExpanded,
-                                onDismissRequest = { sortExpanded = false }
+                                onDismissRequest = {
+                                    sortExpanded = false
+                                    sortSubmenuExpanded = false
+                                    filterSubmenuExpanded = false
+                                }
                             ) {
-                                SortMode.entries.forEach { mode ->
+                                // --- Sort submenu ---
+                                Box {
                                     DropdownMenuItem(
-                                        text = { Text(stringResource(mode.labelResId)) },
+                                        text = { Text(stringResource(R.string.library_sort)) },
                                         onClick = {
-                                            viewModel.setSortMode(mode)
-                                            sortExpanded = false
+                                            sortSubmenuExpanded = true
+                                            filterSubmenuExpanded = false
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Outlined.Sort,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         },
                                         trailingIcon = {
-                                            if (sortMode == mode) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = stringResource(sortMode.labelResId),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                                 Icon(
-                                                    imageVector = Icons.Outlined.Check,
+                                                    imageVector = Icons.Outlined.ChevronRight,
                                                     contentDescription = null,
-                                                    modifier = Modifier.size(18.dp)
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                         }
                                     )
+                                    DropdownMenu(
+                                        expanded = sortSubmenuExpanded,
+                                        onDismissRequest = { sortSubmenuExpanded = false }
+                                    ) {
+                                        SortMode.entries.forEach { mode ->
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(mode.labelResId)) },
+                                                onClick = {
+                                                    viewModel.setSortMode(mode)
+                                                    sortSubmenuExpanded = false
+                                                    sortExpanded = false
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        imageVector = mode.icon,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                },
+                                                trailingIcon = {
+                                                    if (sortMode == mode) {
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.Check,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                                // --- Filter submenu ---
+                                if (categories.isNotEmpty()) {
+                                    Box {
+                                        val allLabel = stringResource(R.string.library_filter_all)
+                                        val generalLabel = stringResource(R.string.category_general_display)
+                                        val currentCategoryName = if (selectedCategoryId == null) {
+                                            allLabel
+                                        } else {
+                                            categoryMap[selectedCategoryId]?.let { cat ->
+                                                if (cat.isDefault) generalLabel else cat.name
+                                            } ?: allLabel
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.library_filter_by_category)) },
+                                            onClick = {
+                                                filterSubmenuExpanded = true
+                                                sortSubmenuExpanded = false
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.FilterList,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            },
+                                            trailingIcon = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = currentCategoryName,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.ChevronRight,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(20.dp),
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        )
+                                        DropdownMenu(
+                                            expanded = filterSubmenuExpanded,
+                                            onDismissRequest = { filterSubmenuExpanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.library_filter_all)) },
+                                                onClick = {
+                                                    viewModel.setSelectedCategory(null)
+                                                    filterSubmenuExpanded = false
+                                                    sortExpanded = false
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.Apps,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                },
+                                                trailingIcon = {
+                                                    if (selectedCategoryId == null) {
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.Check,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    }
+                                                }
+                                            )
+                                            categories.forEach { category ->
+                                                DropdownMenuItem(
+                                                    text = { Text(category.displayName()) },
+                                                    onClick = {
+                                                        viewModel.setSelectedCategory(category.id)
+                                                        filterSubmenuExpanded = false
+                                                        sortExpanded = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.AutoMirrored.Outlined.Label,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    },
+                                                    trailingIcon = {
+                                                        if (selectedCategoryId == category.id) {
+                                                            Icon(
+                                                                imageVector = Icons.Outlined.Check,
+                                                                contentDescription = null,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
