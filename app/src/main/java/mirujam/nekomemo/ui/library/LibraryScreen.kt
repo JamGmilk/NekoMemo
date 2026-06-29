@@ -3,11 +3,16 @@ package mirujam.nekomemo.ui.library
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,11 +26,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Check
@@ -35,21 +37,23 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SortByAlpha
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -66,6 +70,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -122,9 +127,7 @@ fun LibraryScreen(
     val snackbarHostState = LocalSnackbarHostState.current
 
     var showActionMenuFor by remember { mutableStateOf<QuestionBank?>(null) }
-    var sortExpanded by remember { mutableStateOf(false) }
-    var sortSubmenuExpanded by remember { mutableStateOf(false) }
-    var filterSubmenuExpanded by remember { mutableStateOf(false) }
+    var showSortFilterSheet by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
 
     ExportLauncher(
@@ -196,196 +199,16 @@ fun LibraryScreen(
                 onSearchQueryChange = { viewModel.setSearchQuery(it) },
                 actions = {
                     if (banks.isNotEmpty()) {
-                        Box {
-                            TooltipBox(
-                                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),
-                                tooltip = { PlainTooltip { Text(stringResource(R.string.library_sort_and_filter)) } },
-                                state = rememberTooltipState()
-                            ) {
-                                IconButton(onClick = { sortExpanded = true }) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Tune,
-                                        contentDescription = stringResource(R.string.library_sort_and_filter)
-                                    )
-                                }
-                            }
-                            DropdownMenu(
-                                expanded = sortExpanded,
-                                onDismissRequest = {
-                                    sortExpanded = false
-                                    sortSubmenuExpanded = false
-                                    filterSubmenuExpanded = false
-                                }
-                            ) {
-                                // --- Sort submenu ---
-                                Box {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.library_sort)) },
-                                        onClick = {
-                                            sortSubmenuExpanded = true
-                                            filterSubmenuExpanded = false
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Outlined.Sort,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Text(
-                                                    text = stringResource(sortMode.labelResId),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Icon(
-                                                    imageVector = Icons.Outlined.ChevronRight,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    )
-                                    DropdownMenu(
-                                        expanded = sortSubmenuExpanded,
-                                        onDismissRequest = { sortSubmenuExpanded = false }
-                                    ) {
-                                        SortMode.entries.forEach { mode ->
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(mode.labelResId)) },
-                                                onClick = {
-                                                    viewModel.setSortMode(mode)
-                                                    sortSubmenuExpanded = false
-                                                    sortExpanded = false
-                                                },
-                                                leadingIcon = {
-                                                    Icon(
-                                                        imageVector = mode.icon,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                },
-                                                trailingIcon = {
-                                                    if (sortMode == mode) {
-                                                        Icon(
-                                                            imageVector = Icons.Outlined.Check,
-                                                            contentDescription = null,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                                // --- Filter submenu ---
-                                if (categories.isNotEmpty()) {
-                                    Box {
-                                        val allLabel = stringResource(R.string.library_filter_all)
-                                        val generalLabel = stringResource(R.string.category_general_display)
-                                        val currentCategoryName = if (selectedCategoryId == null) {
-                                            allLabel
-                                        } else {
-                                            categoryMap[selectedCategoryId]?.let { cat ->
-                                                if (cat.isDefault) generalLabel else cat.name
-                                            } ?: allLabel
-                                        }
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.library_filter_by_category)) },
-                                            onClick = {
-                                                filterSubmenuExpanded = true
-                                                sortSubmenuExpanded = false
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.FilterList,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            },
-                                            trailingIcon = {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = currentCategoryName,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis
-                                                    )
-                                                    Icon(
-                                                        imageVector = Icons.Outlined.ChevronRight,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(20.dp),
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                            }
-                                        )
-                                        DropdownMenu(
-                                            expanded = filterSubmenuExpanded,
-                                            onDismissRequest = { filterSubmenuExpanded = false }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.library_filter_all)) },
-                                                onClick = {
-                                                    viewModel.setSelectedCategory(null)
-                                                    filterSubmenuExpanded = false
-                                                    sortExpanded = false
-                                                },
-                                                leadingIcon = {
-                                                    Icon(
-                                                        imageVector = Icons.Outlined.Apps,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                },
-                                                trailingIcon = {
-                                                    if (selectedCategoryId == null) {
-                                                        Icon(
-                                                            imageVector = Icons.Outlined.Check,
-                                                            contentDescription = null,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    }
-                                                }
-                                            )
-                                            categories.forEach { category ->
-                                                DropdownMenuItem(
-                                                    text = { Text(category.displayName()) },
-                                                    onClick = {
-                                                        viewModel.setSelectedCategory(category.id)
-                                                        filterSubmenuExpanded = false
-                                                        sortExpanded = false
-                                                    },
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            imageVector = Icons.AutoMirrored.Outlined.Label,
-                                                            contentDescription = null,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    },
-                                                    trailingIcon = {
-                                                        if (selectedCategoryId == category.id) {
-                                                            Icon(
-                                                                imageVector = Icons.Outlined.Check,
-                                                                contentDescription = null,
-                                                                modifier = Modifier.size(20.dp)
-                                                            )
-                                                        }
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                        TooltipBox(
+                            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),
+                            tooltip = { PlainTooltip { Text(stringResource(R.string.library_sort_and_filter)) } },
+                            state = rememberTooltipState()
+                        ) {
+                            IconButton(onClick = { showSortFilterSheet = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Tune,
+                                    contentDescription = stringResource(R.string.library_sort_and_filter)
+                                )
                             }
                         }
                     }
@@ -527,13 +350,26 @@ fun LibraryScreen(
                             onDelete = {
                                 showActionMenuFor = null
                                 viewModel.deleteBank(bank)
-                            }
+                            },
+                            modifier = Modifier.animateItem()
                         )
                     }
                     item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
             }
         }
+    }
+
+    // Sort & Filter Bottom Sheet
+    if (showSortFilterSheet) {
+        SortFilterBottomSheet(
+            sortMode = sortMode,
+            selectedCategoryId = selectedCategoryId,
+            categories = categories,
+            onSortModeChange = { viewModel.setSortMode(it) },
+            onCategoryChange = { viewModel.setSelectedCategory(it) },
+            onDismiss = { showSortFilterSheet = false }
+        )
     }
 }
 
@@ -549,10 +385,11 @@ private fun QuestionBankCard(
     onExport: () -> Unit,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(AppShapes.large)
             .clickable(onClick = onClick),
@@ -673,6 +510,163 @@ private fun QuestionBankCard(
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun SortFilterBottomSheet(
+    sortMode: SortMode,
+    selectedCategoryId: Long?,
+    categories: List<Category>,
+    onSortModeChange: (SortMode) -> Unit,
+    onCategoryChange: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp)
+        ) {
+            // Sort section
+            Text(
+                text = stringResource(R.string.library_sort),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SortMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = sortMode == mode,
+                        onClick = { onSortModeChange(mode) },
+                        label = { Text(stringResource(mode.labelResId)) },
+                        leadingIcon = {
+                            val iconAlpha by animateFloatAsState(
+                                targetValue = if (sortMode == mode) 1f else 0f,
+                                animationSpec = spring(),
+                                label = "sortIconAlpha"
+                            )
+                            val slotWidth by animateDpAsState(
+                                targetValue = if (sortMode == mode) 18.dp else 0.dp,
+                                animationSpec = spring(),
+                                label = "sortSlotWidth"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .width(slotWidth)
+                                    .height(18.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (slotWidth > 0.dp) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .alpha(iconAlpha)
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Filter section (only if categories exist)
+            if (categories.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.library_filter_by_category),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // "All" chip
+                    FilterChip(
+                        selected = selectedCategoryId == null,
+                        onClick = { onCategoryChange(null) },
+                        label = { Text(stringResource(R.string.library_filter_all)) },
+                        leadingIcon = {
+                            val iconAlpha by animateFloatAsState(
+                                targetValue = if (selectedCategoryId == null) 1f else 0f,
+                                animationSpec = spring(),
+                                label = "allIconAlpha"
+                            )
+                            val slotWidth by animateDpAsState(
+                                targetValue = if (selectedCategoryId == null) 18.dp else 0.dp,
+                                animationSpec = spring(),
+                                label = "allSlotWidth"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .width(slotWidth)
+                                    .height(18.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (slotWidth > 0.dp) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .alpha(iconAlpha)
+                                    )
+                                }
+                            }
+                        }
+                    )
+                    // Category chips
+                    categories.forEach { category ->
+                        FilterChip(
+                            selected = selectedCategoryId == category.id,
+                            onClick = { onCategoryChange(category.id) },
+                            label = { Text(category.displayName()) },
+                            leadingIcon = {
+                                val iconAlpha by animateFloatAsState(
+                                    targetValue = if (selectedCategoryId == category.id) 1f else 0f,
+                                    animationSpec = spring(),
+                                    label = "catIconAlpha"
+                                )
+                                val slotWidth by animateDpAsState(
+                                    targetValue = if (selectedCategoryId == category.id) 18.dp else 0.dp,
+                                    animationSpec = spring(),
+                                    label = "catSlotWidth"
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(slotWidth)
+                                        .height(18.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (slotWidth > 0.dp) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .alpha(iconAlpha)
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
