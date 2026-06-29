@@ -39,7 +39,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -75,16 +75,16 @@ fun TestScreen(
     onBack: () -> Unit,
     viewModel: TestViewModel = hiltViewModel()
 ) {
-    val currentIndex by viewModel.currentIndex.collectAsState()
-    val bankTitle by viewModel.bankTitle.collectAsState()
+    val currentIndex by viewModel.currentIndex.collectAsStateWithLifecycle()
+    val bankTitle by viewModel.bankTitle.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val selectedAnswers by viewModel.selectedAnswers.collectAsState()
-    val revealedQuestions by viewModel.revealedQuestions.collectAsState()
-    val isFinished by viewModel.isFinished.collectAsState()
-    val isReviewing by viewModel.isReviewing.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val directAnswer by viewModel.directAnswer.collectAsState()
-    val questions by viewModel.activeQuestions.collectAsState()
+    val selectedAnswers by viewModel.selectedAnswers.collectAsStateWithLifecycle()
+    val revealedQuestions by viewModel.revealedQuestions.collectAsStateWithLifecycle()
+    val isFinished by viewModel.isFinished.collectAsStateWithLifecycle()
+    val isReviewing by viewModel.isReviewing.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val directAnswer by viewModel.directAnswer.collectAsStateWithLifecycle()
+    val questions by viewModel.activeQuestions.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

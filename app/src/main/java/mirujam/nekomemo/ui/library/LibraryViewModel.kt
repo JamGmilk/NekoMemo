@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
@@ -189,6 +191,28 @@ class LibraryViewModel @Inject constructor(
     fun onExportError(message: String) {
         clearExportState()
         _snackbarMessage.value = UiText.DynamicString(message)
+    }
+
+    fun importBankFromUri(uri: android.net.Uri, context: android.content.Context) {
+        viewModelScope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        java.io.BufferedReader(java.io.InputStreamReader(stream)).use { reader ->
+                            reader.readText()
+                        }
+                    } ?: throw java.io.IOException("Cannot open file")
+                }
+                val bankId = bankExportImportUseCase.importBankFromJson(json)
+                _snackbarMessage.value = if (bankId > 0) {
+                    UiText.StringResource(R.string.library_import_success)
+                } else {
+                    UiText.StringResource(R.string.library_import_failed)
+                }
+            } catch (e: Exception) {
+                _snackbarMessage.value = UiText.StringResource(R.string.library_import_error, arrayOf(e.message ?: "Unknown error"))
+            }
+        }
     }
 
     fun importBank(jsonString: String) {

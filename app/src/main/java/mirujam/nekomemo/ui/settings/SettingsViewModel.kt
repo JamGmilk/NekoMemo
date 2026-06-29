@@ -63,8 +63,9 @@ class SettingsViewModel @Inject constructor(
         .map { list -> sortCategoriesWithGeneralFirst(list) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _bankCountsByCategory = MutableStateFlow<Map<Long, Int>>(emptyMap())
-    val bankCountsByCategory: StateFlow<Map<Long, Int>> = _bankCountsByCategory.asStateFlow()
+    val bankCountsByCategory: StateFlow<Map<Long, Int>> = categoryRepository.getBankCountsByCategory()
+        .map { list -> list.associate { it.categoryId to it.count } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _categoryError = MutableStateFlow<UiText?>(null)
     val categoryError: StateFlow<UiText?> = _categoryError.asStateFlow()
@@ -93,16 +94,6 @@ class SettingsViewModel @Inject constructor(
     fun setAutoNextOnCorrect(enabled: Boolean) {
         viewModelScope.launch {
             testPreferenceRepository.setAutoNextOnCorrect(enabled)
-        }
-    }
-
-    fun refreshBankCountsByCategory() {
-        viewModelScope.launch {
-            val current = categoryRepository.getAllCategoriesSync()
-            val counts = current.associate { category ->
-                category.id to categoryRepository.getBankCountByCategoryId(category.id)
-            }
-            _bankCountsByCategory.value = counts
         }
     }
 

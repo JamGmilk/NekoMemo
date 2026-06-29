@@ -63,7 +63,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,9 +90,6 @@ import mirujam.nekomemo.ui.component.ExportLauncher
 import mirujam.nekomemo.ui.component.LocalSnackbarHostState
 import mirujam.nekomemo.ui.component.displayName
 import mirujam.nekomemo.ui.theme.AppShapes
-import java.io.BufferedReader
-import java.io.InputStreamReader
-
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -110,23 +107,22 @@ fun LibraryScreen(
     onNavigateToFetcher: () -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
-    val banks by viewModel.banks.collectAsState()
-    val exportState by viewModel.exportState.collectAsState()
-    val snackbarMessage by viewModel.snackbarMessage.collectAsState()
-    val questionCounts by viewModel.questionCounts.collectAsState()
-    val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsState()
-    val showEditBankDialog by viewModel.showEditBankDialog.collectAsState()
-    val editingBank by viewModel.editingBank.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val sortMode by viewModel.sortMode.collectAsState()
-    val filteredBanks by viewModel.filteredBanks.collectAsState()
-    val categories by viewModel.categories.collectAsState()
+    val banks by viewModel.banks.collectAsStateWithLifecycle()
+    val exportState by viewModel.exportState.collectAsStateWithLifecycle()
+    val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
+    val questionCounts by viewModel.questionCounts.collectAsStateWithLifecycle()
+    val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsStateWithLifecycle()
+    val showEditBankDialog by viewModel.showEditBankDialog.collectAsStateWithLifecycle()
+    val editingBank by viewModel.editingBank.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val sortMode by viewModel.sortMode.collectAsStateWithLifecycle()
+    val filteredBanks by viewModel.filteredBanks.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
     val categoryMap = remember(categories) { categories.associate { it.id to it } }
-    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
 
-    var showActionMenuFor by remember { mutableStateOf<QuestionBank?>(null) }
     var showSortFilterSheet by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
 
@@ -140,16 +136,7 @@ fun LibraryScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            try {
-                val json = context.contentResolver.openInputStream(uri)?.use { stream ->
-                    BufferedReader(InputStreamReader(stream)).use { reader ->
-                        reader.readText()
-                    }
-                } ?: return@let
-                viewModel.importBank(json)
-            } catch (e: Exception) {
-                viewModel.onImportError("Failed to read file: ${e.message}")
-            }
+            viewModel.importBankFromUri(it, context)
         }
     }
 
@@ -331,26 +318,10 @@ fun LibraryScreen(
                             questionCount = questionCounts[bank.id] ?: 0,
                             category = categoryMap[bank.categoryId],
                             onClick = { onBankClick(bank.id) },
-                            menuExpanded = showActionMenuFor?.id == bank.id,
-                            onMenuToggle = {
-                                showActionMenuFor = if (showActionMenuFor?.id == bank.id) null else bank
-                            },
-                            onExport = {
-                                showActionMenuFor = null
-                                viewModel.prepareExport(bank)
-                            },
-                            onEdit = {
-                                showActionMenuFor = null
-                                viewModel.showEditBankDialog(bank)
-                            },
-                            onDuplicate = {
-                                showActionMenuFor = null
-                                viewModel.duplicateBank(bank)
-                            },
-                            onDelete = {
-                                showActionMenuFor = null
-                                viewModel.deleteBank(bank)
-                            },
+                            onExport = { viewModel.prepareExport(bank) },
+                            onEdit = { viewModel.showEditBankDialog(bank) },
+                            onDuplicate = { viewModel.duplicateBank(bank) },
+                            onDelete = { viewModel.deleteBank(bank) },
                             modifier = Modifier.animateItem()
                         )
                     }
@@ -380,14 +351,13 @@ private fun QuestionBankCard(
     questionCount: Int,
     category: Category?,
     onClick: () -> Unit,
-    menuExpanded: Boolean,
-    onMenuToggle: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -453,7 +423,7 @@ private fun QuestionBankCard(
                     state = rememberTooltipState()
                 ) {
                     IconButton(
-                        onClick = onMenuToggle,
+                        onClick = { menuExpanded = !menuExpanded },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
@@ -466,32 +436,32 @@ private fun QuestionBankCard(
                 }
                 DropdownMenu(
                     expanded = menuExpanded,
-                    onDismissRequest = { if (menuExpanded) onMenuToggle() }
+                    onDismissRequest = { menuExpanded = false }
                 ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.library_export)) },
-                        onClick = onExport,
+                        onClick = { menuExpanded = false; onExport() },
                         leadingIcon = {
                             Icon(Icons.Outlined.IosShare, null, modifier = Modifier.size(18.dp))
                         }
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.common_edit)) },
-                        onClick = onEdit,
+                        onClick = { menuExpanded = false; onEdit() },
                         leadingIcon = {
                             Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(18.dp))
                         }
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.library_duplicate)) },
-                        onClick = onDuplicate,
+                        onClick = { menuExpanded = false; onDuplicate() },
                         leadingIcon = {
                             Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(18.dp))
                         }
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error) },
-                        onClick = onDelete,
+                        onClick = { menuExpanded = false; onDelete() },
                         leadingIcon = {
                             Icon(
                                 Icons.Outlined.DeleteOutline,

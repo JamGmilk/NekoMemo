@@ -36,7 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,11 +69,11 @@ fun ExtractScreen(
     onBack: () -> Unit,
     viewModel: ExtractViewModel = hiltViewModel()
 ) {
-    val questionBank by viewModel.questionBank.collectAsState()
-    val isSaving by viewModel.isSaving.collectAsState()
-    val saveResult by viewModel.saveResult.collectAsState()
-    val isSaveSuccess by viewModel.isSaveSuccess.collectAsState()
-    val categories by viewModel.categories.collectAsState()
+    val questionBank by viewModel.questionBank.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
+    val saveResult by viewModel.saveResult.collectAsStateWithLifecycle()
+    val isSaveSuccess by viewModel.isSaveSuccess.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -304,7 +304,7 @@ fun ExtractScreen(
                         }
                     }
 
-                    itemsIndexed(bank.questions, key = { index, _ -> index }, contentType = { _, _ -> "question" }) { index, question ->
+                    itemsIndexed(bank.questions, key = { _, q -> q.content.hashCode() + 31 * q.type.hashCode() }, contentType = { _, _ -> "question" }) { index, question ->
                         ExtractedQuestionCard(
                             index = index,
                             question = question

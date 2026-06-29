@@ -52,7 +52,7 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,7 +72,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mirujam.nekomemo.R
 import mirujam.nekomemo.navigation.Route
@@ -94,7 +93,7 @@ fun FetcherScreen(
     onBack: () -> Unit,
     viewModel: FetcherViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isParsing = uiState.isParsing
     val parseResult = uiState.parseResult
     val currentUrl = uiState.currentUrl.ifBlank { "https://i.chaoxing.com" }
@@ -342,8 +341,8 @@ fun FetcherScreen(
                         state = rememberTooltipState()
                     ) {
                         IconButton(onClick = { webViewRef.webView?.evaluateJavascript("(function() { return document.documentElement.outerHTML; })();") { html ->
-                            val decoded = viewModel.decodeHtml(html)
-                            coroutineScope.launch(Dispatchers.Main) {
+                            coroutineScope.launch {
+                                val decoded = viewModel.decodeHtml(html)
                                 htmlContent = decoded
                                 showHtmlSheet = true
                             }
@@ -365,9 +364,11 @@ fun FetcherScreen(
                         webViewRef.webView?.let { webView ->
                             viewModel.clearResult()
                             webView.evaluateJavascript("(function() { return document.documentElement.outerHTML; })();") { html ->
-                                val decoded = viewModel.decodeHtml(html)
-                                if (decoded.isNotBlank()) {
-                                    viewModel.parseHtml(decoded)
+                                coroutineScope.launch {
+                                    val decoded = viewModel.decodeHtml(html)
+                                    if (decoded.isNotBlank()) {
+                                        viewModel.parseHtml(decoded)
+                                    }
                                 }
                             }
                         }

@@ -2,6 +2,9 @@ package mirujam.nekomemo.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import androidx.room.withTransaction
+import mirujam.nekomemo.data.local.NekoMemoDatabase
+import mirujam.nekomemo.data.local.dao.CategoryBankCount
 import mirujam.nekomemo.data.local.dao.CategoryDao
 import mirujam.nekomemo.data.local.dao.QuestionBankDao
 import mirujam.nekomemo.data.local.entity.CategoryEntity
@@ -15,7 +18,8 @@ import javax.inject.Singleton
 @Singleton
 class CategoryRepository @Inject constructor(
     private val categoryDao: CategoryDao,
-    private val questionBankDao: QuestionBankDao
+    private val questionBankDao: QuestionBankDao,
+    private val database: NekoMemoDatabase
 ) {
     companion object {
         const val DEFAULT_CATEGORY_NAME = "GENERAL"
@@ -73,21 +77,24 @@ class CategoryRepository @Inject constructor(
         return Result.success(Unit)
     }
 
-    suspend fun deleteCategory(categoryId: Long): Result<Unit> {
-        val category = categoryDao.getCategoryById(categoryId) ?: return Result.failure(IllegalStateException("Category not found"))
+    suspend fun deleteCategory(categoryId: Long): Result<Unit> = database.withTransaction {
+        val category = categoryDao.getCategoryById(categoryId) ?: return@withTransaction Result.failure(IllegalStateException("Category not found"))
         if (category.name == DEFAULT_CATEGORY_NAME) {
-            return Result.failure(IllegalStateException("Cannot delete default category"))
+            return@withTransaction Result.failure(IllegalStateException("Cannot delete default category"))
         }
         val general = categoryDao.getCategoryByName(DEFAULT_CATEGORY_NAME)
         if (general != null && general.id != categoryId) {
             questionBankDao.reassignCategory(oldCategoryId = categoryId, newCategoryId = general.id)
         }
         categoryDao.deleteCategory(category)
-        return Result.success(Unit)
+        Result.success(Unit)
     }
 
     suspend fun getBankCountByCategoryId(categoryId: Long): Int =
         categoryDao.getBankCountByCategoryId(categoryId)
+
+    fun getBankCountsByCategory(): Flow<List<CategoryBankCount>> =
+        questionBankDao.getBankCountsByCategory()
 
     suspend fun ensureDefaultCategory() {
         if (categoryDao.getCategoryCount() == 0) {

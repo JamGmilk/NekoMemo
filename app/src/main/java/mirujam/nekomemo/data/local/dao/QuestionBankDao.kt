@@ -18,11 +18,17 @@ interface QuestionBankDao {
     @Query("SELECT * FROM question_banks WHERE id = :id")
     suspend fun getBankById(id: Long): QuestionBankEntity?
 
+    @Query("SELECT * FROM question_banks WHERE id = :id")
+    fun getBankByIdFlow(id: Long): Flow<QuestionBankEntity?>
+
     @Query("SELECT * FROM question_banks WHERE categoryId = :categoryId ORDER BY createdAt DESC")
     fun getBanksByCategoryId(categoryId: Long): Flow<List<QuestionBankEntity>>
 
     @Query("SELECT COUNT(*) FROM question_banks WHERE categoryId = :categoryId")
     suspend fun getBankCountByCategoryId(categoryId: Long): Int
+
+    @Query("SELECT categoryId, COUNT(*) as count FROM question_banks GROUP BY categoryId")
+    fun getBankCountsByCategory(): Flow<List<CategoryBankCount>>
 
     @Query("UPDATE question_banks SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun reassignCategory(oldCategoryId: Long, newCategoryId: Long)

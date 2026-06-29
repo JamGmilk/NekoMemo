@@ -1,7 +1,9 @@
 package mirujam.nekomemo.domain.model
 
+import androidx.compose.runtime.Immutable
 import mirujam.nekomemo.domain.validator.DataValidator
 
+@Immutable
 data class ExtractedQuestion(
     val type: QuestionType,
     val content: String,
@@ -14,6 +16,7 @@ data class ExtractedQuestion(
     }
 }
 
+@Immutable
 data class ExtractedQuestionBank(
     val name: String,
     val questions: List<ExtractedQuestion>,

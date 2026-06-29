@@ -1,6 +1,8 @@
 package mirujam.nekomemo.domain.usecase
 
 import timber.log.Timber
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.domain.model.Question
@@ -24,8 +26,8 @@ class BankExportImportUseCase @Inject constructor(
         private const val KEY_NEKOMEMO = "nekomemo"
     }
 
-    suspend fun exportBankToJson(bankId: Long): String? {
-        val bank = repository.getBankById(bankId) ?: return null
+    suspend fun exportBankToJson(bankId: Long): String? = withContext(Dispatchers.Default) {
+        val bank = repository.getBankById(bankId) ?: return@withContext null
         val questions = repository.getQuestionsForBankSync(bankId)
 
         val json = JSONObject()
@@ -46,10 +48,10 @@ class BankExportImportUseCase @Inject constructor(
         val wrapper = JSONObject()
         wrapper.put(KEY_VERSION, FORMAT_VERSION)
         wrapper.put(KEY_NEKOMEMO, json)
-        return wrapper.toString(2)
+        wrapper.toString(2)
     }
 
-    suspend fun importBankFromJson(jsonString: String): Long {
+    suspend fun importBankFromJson(jsonString: String): Long = withContext(Dispatchers.Default) {
         Timber.d("Starting import, JSON size: ${jsonString.length} bytes")
 
         if (jsonString.isBlank()) {
@@ -88,14 +90,13 @@ class BankExportImportUseCase @Inject constructor(
 
         Timber.d("Creating bank with title='$title', categoryId=$categoryId")
 
-        val bankId = repository.insertBank(
-            QuestionBank(title = title, categoryId = categoryId)
-        )
-
         val questionsArray = bankJson.optJSONArray("questions")
         if (questionsArray == null) {
-            Timber.d("No questions array found, returning empty bank with id=$bankId")
-            return bankId
+            Timber.d("No questions array found, creating empty bank")
+            return@withContext repository.createBankWithQuestions(
+                QuestionBank(title = title, categoryId = categoryId),
+                emptyList()
+            )
         }
 
         if (questionsArray.length() > DataValidator.MAX_QUESTIONS_COUNT) {
@@ -110,7 +111,7 @@ class BankExportImportUseCase @Inject constructor(
         for (i in 0 until maxQuestions) {
             try {
                 val qJson = questionsArray.getJSONObject(i)
-                val question = validateAndCreateQuestion(qJson, bankId, i)
+                val question = validateAndCreateQuestion(qJson, 0, i)
                 if (question != null) {
                     validQuestions.add(question)
                 } else {
@@ -122,15 +123,13 @@ class BankExportImportUseCase @Inject constructor(
             }
         }
 
-        if (validQuestions.isNotEmpty()) {
-            Timber.d("Inserting ${validQuestions.size} valid questions ($skippedCount skipped)")
-            repository.insertQuestions(validQuestions)
-        } else if (skippedCount > 0) {
-            Timber.w("All $skippedCount questions were invalid, created empty bank")
-        }
+        val bankId = repository.createBankWithQuestions(
+            QuestionBank(title = title, categoryId = categoryId),
+            validQuestions
+        )
 
         Timber.d("Import completed: bankId=$bankId, questions=${validQuestions.size}, skipped=$skippedCount")
-        return bankId
+        bankId
     }
 
     private fun validateAndCreateQuestion(qJson: JSONObject, bankId: Long, index: Int): Question? {

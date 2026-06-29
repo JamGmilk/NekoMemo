@@ -56,10 +56,14 @@ fun NekoMemoNavigation(
         composable(Route.Library.route) {
             LibraryScreen(
                 onBankClick = { bankId ->
-                    navController.navigate(Route.Detail.createRoute(bankId))
+                    navController.navigate(Route.Detail.createRoute(bankId)) {
+                        launchSingleTop = true
+                    }
                 },
                 onNavigateToFetcher = {
-                    navController.navigate(Route.Fetcher.route)
+                    navController.navigate(Route.Fetcher.route) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -70,7 +74,11 @@ fun NekoMemoNavigation(
 
         composable(Route.Fetcher.route) {
             FetcherScreen(
-                onNavigateToExtract = { navController.navigate(Route.Extract.route) },
+                onNavigateToExtract = {
+                    navController.navigate(Route.Extract.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -89,7 +97,9 @@ fun NekoMemoNavigation(
         ) { _ ->
             BankDetailScreen(
                 onStartTest = { id, count, shuffleQuestions, shuffleOptions ->
-                    navController.navigate(Route.Test.createRoute(id, count, shuffleQuestions, shuffleOptions))
+                    navController.navigate(Route.Test.createRoute(id, count, shuffleQuestions, shuffleOptions)) {
+                        launchSingleTop = true
+                    }
                 },
                 onBack = { navController.popBackStack() }
             )

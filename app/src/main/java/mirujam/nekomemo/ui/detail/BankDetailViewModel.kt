@@ -43,14 +43,19 @@ class BankDetailViewModel @Inject constructor(
     private val exportDelegate = ExportDelegate(viewModelScope, bankExportImportUseCase)
     val exportState: StateFlow<ExportState> = exportDelegate.exportState
 
-    private val _questionCount = MutableStateFlow(0)
-    val questionCount: StateFlow<Int> = _questionCount.asStateFlow()
+    private val _currentBank = MutableStateFlow<QuestionBank?>(null)
+    val currentBank: StateFlow<QuestionBank?> = _currentBank.asStateFlow()
 
-    private val _bankTitle = MutableStateFlow("")
-    val bankTitle: StateFlow<String> = _bankTitle.asStateFlow()
+    val bankTitle: StateFlow<String> = _currentBank
+        .map { it?.title ?: "" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    private val _bankCategoryId = MutableStateFlow(0L)
-    val bankCategoryId: StateFlow<Long> = _bankCategoryId.asStateFlow()
+    val bankCategoryId: StateFlow<Long> = _currentBank
+        .map { it?.categoryId ?: 0L }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
+    val questionCount: StateFlow<Int> = repository.getQuestionCountForBank(bankId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private val _showEditDialog = MutableStateFlow(false)
     val showEditDialog: StateFlow<Boolean> = _showEditDialog.asStateFlow()
@@ -87,20 +92,10 @@ class BankDetailViewModel @Inject constructor(
 
     private var pendingDeleteQuestion: Question? = null
 
-    private val _currentBank = MutableStateFlow<QuestionBank?>(null)
-
     init {
         viewModelScope.launch {
-            val bank = repository.getBankById(bankId)
-            bank?.let {
-                _currentBank.value = it
-                _bankTitle.value = it.title
-                _bankCategoryId.value = it.categoryId
-            }
-        }
-        viewModelScope.launch {
-            repository.getQuestionCountForBank(bankId).collect { count ->
-                _questionCount.value = count
+            repository.getBankByIdFlow(bankId).collect { bank ->
+                _currentBank.value = bank
             }
         }
     }
@@ -167,7 +162,7 @@ class BankDetailViewModel @Inject constructor(
     }
 
     fun prepareExport() {
-        exportDelegate.prepareExport(bankId, _bankTitle.value)
+        exportDelegate.prepareExport(bankId, _currentBank.value?.title ?: "")
     }
 
     fun clearExportState() {
@@ -187,10 +182,7 @@ class BankDetailViewModel @Inject constructor(
             _currentBank.value?.let { bank ->
                 val updated = bank.copy(title = title, categoryId = categoryId)
                 repository.updateBank(updated)
-                _bankTitle.value = title
-                _bankCategoryId.value = categoryId
                 _showEditDialog.value = false
-                _currentBank.value = updated
             }
         }
     }

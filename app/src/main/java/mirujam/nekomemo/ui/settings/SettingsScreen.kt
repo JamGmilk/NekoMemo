@@ -58,7 +58,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -103,14 +103,14 @@ fun SettingsScreen(
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     var snackbarTrigger by remember { mutableIntStateOf(0) }
 
-    val bankCount by viewModel.bankCount.collectAsState()
-    val totalQuestionCount by viewModel.totalQuestionCount.collectAsState()
-    val currentTheme by viewModel.themeMode.collectAsState()
-    val directAnswer by viewModel.directAnswer.collectAsState()
-    val autoNextOnCorrect by viewModel.autoNextOnCorrect.collectAsState()
-    val categories by viewModel.categories.collectAsState()
-    val categoryError by viewModel.categoryError.collectAsState()
-    val bankCountsByCategory by viewModel.bankCountsByCategory.collectAsState()
+    val bankCount by viewModel.bankCount.collectAsStateWithLifecycle()
+    val totalQuestionCount by viewModel.totalQuestionCount.collectAsStateWithLifecycle()
+    val currentTheme by viewModel.themeMode.collectAsStateWithLifecycle()
+    val directAnswer by viewModel.directAnswer.collectAsStateWithLifecycle()
+    val autoNextOnCorrect by viewModel.autoNextOnCorrect.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val categoryError by viewModel.categoryError.collectAsStateWithLifecycle()
+    val bankCountsByCategory by viewModel.bankCountsByCategory.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
@@ -140,7 +140,6 @@ fun SettingsScreen(
                     selectedCategory = null
                     snackbarMessage = context.getString(R.string.settings_category_deleted, event.name)
                     snackbarTrigger++
-                    viewModel.refreshBankCountsByCategory()
                 }
                 is CategoryOperationResult.Error -> {
                     showDeleteCategoryDialog = false
@@ -160,10 +159,6 @@ fun SettingsScreen(
             snackbarTrigger++
             viewModel.clearCategoryError()
         }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshBankCountsByCategory()
     }
 
     if (showClearDialog) {

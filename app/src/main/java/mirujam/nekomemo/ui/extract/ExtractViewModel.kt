@@ -3,12 +3,14 @@ package mirujam.nekomemo.ui.extract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.repository.CategoryRepository
@@ -50,10 +52,12 @@ class ExtractViewModel @Inject constructor(
         }
     }
 
-    fun initFromJson(jsonData: String?) {
+    suspend fun initFromJson(jsonData: String?) {
         Timber.d("initFromJson() called with data length: ${jsonData?.length ?: 0}")
         if (jsonData != null) {
-            val parsed = ExtractedQuestionBankSerializer.fromJson(jsonData)
+            val parsed = withContext(Dispatchers.Default) {
+                ExtractedQuestionBankSerializer.fromJson(jsonData)
+            }
             Timber.d("Parsed question bank: name='${parsed?.name}', questions=${parsed?.questions?.size ?: 0}")
             _questionBankFlow.value = parsed
         } else {
@@ -72,23 +76,23 @@ class ExtractViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                val bankId = repository.insertBank(
-                    QuestionBank(
-                        title = bankTitle,
-                        categoryId = categoryId
-                    )
-                )
                 val questions = bank.questions.map { q ->
                     Question(
-                        questionBankId = bankId,
+                        questionBankId = 0,
                         text = q.content,
                         options = q.options,
                         correctIndices = q.correctIndices,
                         type = q.type
                     )
                 }
-                repository.insertQuestions(questions)
-                Timber.d("Successfully saved ${questions.size} questions")
+                val bankId = repository.createBankWithQuestions(
+                    QuestionBank(
+                        title = bankTitle,
+                        categoryId = categoryId
+                    ),
+                    questions
+                )
+                Timber.d("Successfully saved ${questions.size} questions, bankId=$bankId")
                 _saveResult.value = UiText.PluralStringResource(R.plurals.extract_save_success, questions.size, arrayOf(questions.size))
                 _isSaveSuccess.value = true
             } catch (e: Exception) {
@@ -111,7 +115,7 @@ class ExtractViewModel @Inject constructor(
         _saveResult.value = null
     }
 
-    suspend fun loadFromSharedDataStore(): String? {
+    fun loadFromSharedDataStore(): String? {
         return sharedDataStore.getExtractedJson()
     }
 
@@ -119,7 +123,8 @@ class ExtractViewModel @Inject constructor(
         return sharedDataStore.setSaveResult(message)
     }
 
-    suspend fun clearSharedDataStore(): Boolean {
-        return sharedDataStore.clearExtractedJson()
+    fun clearSharedDataStore(): Boolean {
+        sharedDataStore.clearExtractedJson()
+        return true
     }
 }

@@ -56,7 +56,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -96,19 +96,19 @@ fun BankDetailScreen(
     onBack: () -> Unit,
     viewModel: BankDetailViewModel = hiltViewModel()
 ) {
-    val bankTitle by viewModel.bankTitle.collectAsState()
-    val bankCategoryId by viewModel.bankCategoryId.collectAsState()
-    val showEditDialog by viewModel.showEditDialog.collectAsState()
-    val showAddQuestionDialog by viewModel.showAddQuestionDialog.collectAsState()
-    val editingQuestionId by viewModel.editingQuestionId.collectAsState()
-    val editingQuestion by viewModel.editingQuestion.collectAsState()
-    val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsState()
-    val showDeleteBankConfirmDialog by viewModel.showDeleteBankConfirmDialog.collectAsState()
+    val bankTitle by viewModel.bankTitle.collectAsStateWithLifecycle()
+    val bankCategoryId by viewModel.bankCategoryId.collectAsStateWithLifecycle()
+    val showEditDialog by viewModel.showEditDialog.collectAsStateWithLifecycle()
+    val showAddQuestionDialog by viewModel.showAddQuestionDialog.collectAsStateWithLifecycle()
+    val editingQuestionId by viewModel.editingQuestionId.collectAsStateWithLifecycle()
+    val editingQuestion by viewModel.editingQuestion.collectAsStateWithLifecycle()
+    val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsStateWithLifecycle()
+    val showDeleteBankConfirmDialog by viewModel.showDeleteBankConfirmDialog.collectAsStateWithLifecycle()
 
-    val questions by viewModel.filteredQuestions.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val questionCount by viewModel.questionCount.collectAsState()
-    val categories by viewModel.categories.collectAsState()
+    val questions by viewModel.filteredQuestions.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val questionCount by viewModel.questionCount.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
     var showTestConfigDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
 
@@ -116,7 +116,7 @@ fun BankDetailScreen(
     val questionCountText = pluralStringResource(R.plurals.library_questions_count, questionCount, questionCount)
 
     val context = LocalContext.current
-    val exportState by viewModel.exportState.collectAsState()
+    val exportState by viewModel.exportState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
 
     var exportErrorMessage by remember { mutableStateOf<String?>(null) }

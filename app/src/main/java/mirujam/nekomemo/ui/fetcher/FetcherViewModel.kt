@@ -157,8 +157,9 @@ class FetcherViewModel @Inject constructor(
         return json
     }
 
-    suspend fun saveToSharedDataStore(json: String): Boolean {
-        return sharedDataStore.setExtractedJson(json)
+    fun saveToSharedDataStore(json: String): Boolean {
+        sharedDataStore.setExtractedJson(json)
+        return true
     }
 
     fun onNavigatedToExtract() {
@@ -218,7 +219,9 @@ class FetcherViewModel @Inject constructor(
         )
     }
 
-    fun decodeHtml(raw: String?): String = htmlParserUseCase.decodeHtmlFromJs(raw)
+    suspend fun decodeHtml(raw: String?): String = withContext(Dispatchers.Default) {
+        htmlParserUseCase.decodeHtmlFromJs(raw)
+    }
 
     suspend fun getAndClearSaveResult(): String? {
         val result = sharedDataStore.getSaveResult()

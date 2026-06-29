@@ -30,6 +30,9 @@ class QuestionRepository @Inject constructor(
     suspend fun getBankById(id: Long): QuestionBank? =
         questionBankDao.getBankById(id)?.toDomainModel()
 
+    fun getBankByIdFlow(id: Long): Flow<QuestionBank?> =
+        questionBankDao.getBankByIdFlow(id).map { it?.toDomainModel() }
+
     suspend fun insertBank(bank: QuestionBank): Long =
         questionBankDao.insertBank(bank.toEntity())
 
@@ -69,6 +72,15 @@ class QuestionRepository @Inject constructor(
             questionDao.insertAll(questions.map { it.toEntity() })
         }
     }
+
+    suspend fun createBankWithQuestions(bank: QuestionBank, questions: List<Question>): Long =
+        database.withTransaction {
+            val bankId = questionBankDao.insertBank(bank.toEntity())
+            if (questions.isNotEmpty()) {
+                questionDao.insertAll(questions.map { it.copy(questionBankId = bankId).toEntity() })
+            }
+            bankId
+        }
 
     suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: QuestionType) {
         questionDao.updateQuestion(
