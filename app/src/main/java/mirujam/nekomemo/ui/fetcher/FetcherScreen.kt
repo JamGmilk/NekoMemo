@@ -47,7 +47,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -101,7 +102,7 @@ fun FetcherScreen(
 
     var showHtmlSheet by rememberSaveable { mutableStateOf(false) }
     var htmlContent by rememberSaveable { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val scrollState = rememberScrollState()
 
     var isLoading by rememberSaveable { mutableStateOf(false) }

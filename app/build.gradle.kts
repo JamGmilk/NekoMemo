@@ -48,12 +48,6 @@ android {
     }
 }
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
-    }
-}
-
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -87,6 +81,7 @@ dependencies {
     // Other
     implementation(libs.jsoup)
     implementation(libs.timber)
+    implementation(libs.errorprone.annotations)
 
     // Test
     testImplementation(libs.junit)
