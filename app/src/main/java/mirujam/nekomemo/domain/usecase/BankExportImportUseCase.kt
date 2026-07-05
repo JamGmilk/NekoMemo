@@ -30,9 +30,12 @@ class BankExportImportUseCase @Inject constructor(
         val bank = repository.getBankById(bankId) ?: return@withContext null
         val questions = repository.getQuestionsForBankSync(bankId)
 
+        val categoryName = categoryRepository.getCategoryById(bank.categoryId)?.name
+            ?: CategoryRepository.DEFAULT_CATEGORY_NAME
+
         val json = JSONObject()
         json.put("title", bank.title)
-        json.put("categoryId", bank.categoryId)
+        json.put("category", categoryName)
 
         val questionsArray = JSONArray()
         questions.forEach { q ->
@@ -111,7 +114,7 @@ class BankExportImportUseCase @Inject constructor(
         for (i in 0 until maxQuestions) {
             try {
                 val qJson = questionsArray.getJSONObject(i)
-                val question = validateAndCreateQuestion(qJson, 0, i)
+                val question = validateAndCreateQuestion(qJson, i)
                 if (question != null) {
                     validQuestions.add(question)
                 } else {
@@ -132,7 +135,7 @@ class BankExportImportUseCase @Inject constructor(
         bankId
     }
 
-    private fun validateAndCreateQuestion(qJson: JSONObject, bankId: Long, index: Int): Question? {
+    private fun validateAndCreateQuestion(qJson: JSONObject, index: Int): Question? {
         val rawText = qJson.optString("text", "")
         val text = DataValidator.sanitizeString(rawText, DataValidator.MAX_TEXT_LENGTH, "")
 
@@ -141,6 +144,10 @@ class BankExportImportUseCase @Inject constructor(
             return null
         }
 
+        val type = QuestionType.fromLegacyString(
+            qJson.optString("type", "SINGLE_CHOICE").ifBlank { "SINGLE_CHOICE" }
+        )
+
         val optionsArray = qJson.optJSONArray("options")
         val options = if (optionsArray != null) {
             parseAndValidateOptions(optionsArray)
@@ -148,7 +155,9 @@ class BankExportImportUseCase @Inject constructor(
             emptyList()
         }
 
-        if (options.size < DataValidator.MIN_OPTIONS_COUNT) {
+        // 填空题和简答题不需要选项
+        val requiresOptions = type != QuestionType.FILL_BLANK && type != QuestionType.SHORT_ANSWER
+        if (requiresOptions && options.size < DataValidator.MIN_OPTIONS_COUNT) {
             Timber.d("Question $index: Insufficient options (${options.size} < ${DataValidator.MIN_OPTIONS_COUNT}), skipping")
             return null
         }
@@ -157,11 +166,11 @@ class BankExportImportUseCase @Inject constructor(
         val correctIndices = parseCorrectIndices(qJson, options)
 
         return Question(
-            questionBankId = bankId,
+            questionBankId = 0,
             text = text,
             options = options,
             correctIndices = correctIndices,
-            type = QuestionType.fromLegacyString(qJson.optString("type", "SINGLE_CHOICE").ifBlank { "SINGLE_CHOICE" })
+            type = type
         )
     }
 
@@ -207,12 +216,11 @@ class BankExportImportUseCase @Inject constructor(
     }
 
     private suspend fun resolveCategoryId(bankJson: JSONObject): Long {
-        val categoryId = bankJson.optLong("categoryId", 0L)
-        if (categoryId > 0) {
-            return categoryId
-        }
+        val rawCategory = bankJson.optString("category", "")
+        val categoryName = DataValidator.validateCategory(
+            rawCategory.ifBlank { CategoryRepository.DEFAULT_CATEGORY_NAME }
+        )
 
-        val categoryName = DataValidator.validateCategory(bankJson.optString("category", CategoryRepository.DEFAULT_CATEGORY_NAME))
         val existingCategory = categoryRepository.getCategoryByName(categoryName)
         if (existingCategory != null) {
             return existingCategory.id

@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,6 +75,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -82,6 +86,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
+import mirujam.nekomemo.navigation.BOTTOM_BAR_HEIGHT
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
@@ -125,6 +130,8 @@ fun LibraryScreen(
 
     var showSortFilterSheet by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
+
+    val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BOTTOM_BAR_HEIGHT
 
     ExportLauncher(
         exportState = exportState,
@@ -251,12 +258,14 @@ fun LibraryScreen(
                 }
             )
         },
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(bottom = bottomBarPadding)
         ) {
             if (banks.isEmpty()) {
                 Box(
@@ -309,9 +318,9 @@ fun LibraryScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item { Spacer(modifier = Modifier.height(4.dp)) }
                     items(filteredBanks, key = { it.id }, contentType = { "bank" }) { bank ->
                         QuestionBankCard(
                             bank = bank,
@@ -325,7 +334,6 @@ fun LibraryScreen(
                             modifier = Modifier.animateItem()
                         )
                     }
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
             }
         }

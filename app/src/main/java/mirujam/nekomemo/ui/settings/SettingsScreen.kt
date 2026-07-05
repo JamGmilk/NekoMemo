@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,6 +83,7 @@ import mirujam.nekomemo.R
 import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.validator.DataValidator
+import mirujam.nekomemo.navigation.BOTTOM_BAR_HEIGHT
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
@@ -114,6 +117,8 @@ fun SettingsScreen(
 
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
+
+    val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BOTTOM_BAR_HEIGHT
 
     LaunchedEffect(snackbarTrigger) {
         if (snackbarTrigger > 0) {
@@ -255,6 +260,7 @@ fun SettingsScreen(
                 title = stringResource(Route.Settings.titleResId)
             )
         },
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(
@@ -263,7 +269,7 @@ fun SettingsScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(top = 8.dp, bottom = 16.dp),
+                .padding(top = 8.dp, bottom = 16.dp + bottomBarPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             AppearanceCard(

@@ -1,17 +1,37 @@
 package mirujam.nekomemo.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import mirujam.nekomemo.R
 import mirujam.nekomemo.ui.detail.BankDetailScreen
 import mirujam.nekomemo.ui.extract.ExtractScreen
 import mirujam.nekomemo.ui.fetcher.FetcherScreen
@@ -19,38 +39,145 @@ import mirujam.nekomemo.ui.library.LibraryScreen
 import mirujam.nekomemo.ui.settings.SettingsScreen
 import mirujam.nekomemo.ui.test.TestScreen
 
+val BOTTOM_BAR_HEIGHT = 80.dp
+
+private val TOP_LEVEL_ROUTES = setOf(Route.Library.route, Route.Settings.route)
+
+data class TopLevelDestination(
+    val route: String,
+    val icon: ImageVector,
+    val labelResId: Int
+)
+
+val TOP_LEVEL_DESTINATIONS: List<TopLevelDestination> = listOf(
+    TopLevelDestination(
+        route = Route.Library.route,
+        icon = Icons.Outlined.FolderOpen,
+        labelResId = R.string.nav_library
+    ),
+    TopLevelDestination(
+        route = Route.Settings.route,
+        icon = Icons.Outlined.Settings,
+        labelResId = R.string.nav_settings
+    )
+)
+
+@Stable
+class NekoMemoAppState(
+    val navController: NavHostController
+) {
+    private var selectedTabRoute by mutableStateOf(Route.Library.route)
+
+    val currentTopLevelDestination: TopLevelDestination?
+        get() = TOP_LEVEL_DESTINATIONS.find { it.route == selectedTabRoute }
+
+    fun navigateToTopLevelDestination(destination: TopLevelDestination) {
+        selectedTabRoute = destination.route
+        navController.navigate(destination.route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+}
+
 @Composable
-fun NekoMemoNavigation(
-    navController: NavHostController,
+fun rememberNekoMemoAppState(
+    navController: NavHostController = rememberNavController()
+): NekoMemoAppState {
+    return remember(navController) {
+        NekoMemoAppState(navController)
+    }
+}
+
+@Composable
+fun BottomNavBar(
+    destinations: List<TopLevelDestination>,
+    currentDestination: TopLevelDestination?,
+    onNavigateToDestination: (TopLevelDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    NavigationBar(modifier = modifier) {
+        destinations.forEach { destination ->
+            val label = stringResource(destination.labelResId)
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        imageVector = destination.icon,
+                        contentDescription = label
+                    )
+                },
+                label = { Text(text = label) },
+                selected = currentDestination == destination,
+                onClick = { onNavigateToDestination(destination) },
+                alwaysShowLabel = false
+            )
+        }
+    }
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean {
+    val initial = initialState.destination.route ?: return false
+    val target = targetState.destination.route ?: return false
+    return initial in TOP_LEVEL_ROUTES && target in TOP_LEVEL_ROUTES
+}
+
+@Composable
+fun NekoMemoNavigation(
+    appState: NekoMemoAppState,
+    modifier: Modifier = Modifier
+) {
+    val navController = appState.navController
+
     NavHost(
         navController = navController,
         startDestination = Route.Library.route,
         modifier = modifier,
         enterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { it },
-                animationSpec = tween(250)
-            ) + fadeIn(animationSpec = tween(250))
+            if (isTabSwitch()) {
+                if (targetState.destination.route == Route.Settings.route) {
+                    slideInHorizontally(tween(300)) { it }
+                } else {
+                    slideInHorizontally(tween(300)) { -it }
+                }
+            } else {
+                fadeIn(tween(300))
+            }
         },
         exitTransition = {
-            slideOutHorizontally(
-                targetOffsetX = { -it },
-                animationSpec = tween(250)
-            ) + fadeOut(animationSpec = tween(250))
+            if (isTabSwitch()) {
+                if (initialState.destination.route == Route.Library.route) {
+                    slideOutHorizontally(tween(300)) { -it }
+                } else {
+                    slideOutHorizontally(tween(300)) { it }
+                }
+            } else {
+                fadeOut(tween(300))
+            }
         },
         popEnterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { -it },
-                animationSpec = tween(250)
-            ) + fadeIn(animationSpec = tween(250))
+            if (isTabSwitch()) {
+                if (targetState.destination.route == Route.Settings.route) {
+                    slideInHorizontally(tween(300)) { it }
+                } else {
+                    slideInHorizontally(tween(300)) { -it }
+                }
+            } else {
+                fadeIn(tween(300))
+            }
         },
         popExitTransition = {
-            slideOutHorizontally(
-                targetOffsetX = { it },
-                animationSpec = tween(250)
-            ) + fadeOut(animationSpec = tween(250))
+            if (isTabSwitch()) {
+                if (initialState.destination.route == Route.Library.route) {
+                    slideOutHorizontally(tween(300)) { -it }
+                } else {
+                    slideOutHorizontally(tween(300)) { it }
+                }
+            } else {
+                fadeOut(tween(300))
+            }
         }
     ) {
         composable(Route.Library.route) {
@@ -94,7 +221,7 @@ fun NekoMemoNavigation(
             arguments = listOf(
                 navArgument("bankId") { type = NavType.LongType }
             )
-        ) { _ ->
+        ) {
             BankDetailScreen(
                 onStartTest = { id, count, shuffleQuestions, shuffleOptions ->
                     navController.navigate(Route.Test.createRoute(id, count, shuffleQuestions, shuffleOptions)) {
@@ -113,7 +240,7 @@ fun NekoMemoNavigation(
                 navArgument("shuffleQuestions") { type = NavType.BoolType; defaultValue = false },
                 navArgument("shuffleOptions") { type = NavType.BoolType; defaultValue = false }
             )
-        ) { backStackEntry ->
+        ) {
             TestScreen(
                 onBack = { navController.popBackStack() }
             )

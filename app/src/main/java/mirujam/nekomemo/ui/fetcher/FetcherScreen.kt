@@ -406,7 +406,7 @@ fun FetcherScreen(
                         .fillMaxWidth()
                         .weight(1f)
                         .onSizeChanged { size ->
-                            if (webViewHeight == 0.dp && size.height > 0) {
+                            if (size.height > 0) {
                                 webViewHeight = with(density) { size.height.toDp() }
                             }
                         }

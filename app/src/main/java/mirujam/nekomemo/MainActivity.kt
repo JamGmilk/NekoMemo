@@ -5,7 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -21,11 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import mirujam.nekomemo.data.local.MigrationErrorStore
@@ -33,10 +33,12 @@ import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.data.preferences.ThemePreferenceRepository
 import mirujam.nekomemo.navigation.BottomNavBar
 import mirujam.nekomemo.navigation.NekoMemoNavigation
-import mirujam.nekomemo.navigation.Route
+import mirujam.nekomemo.navigation.TOP_LEVEL_DESTINATIONS
+import mirujam.nekomemo.navigation.rememberNekoMemoAppState
 import mirujam.nekomemo.ui.component.LocalSnackbarHostState
 import mirujam.nekomemo.ui.theme.NekoMemoTheme
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -60,11 +62,8 @@ class MainActivity : ComponentActivity() {
             }
 
             NekoMemoTheme(darkTheme = darkTheme) {
-                val navController = rememberNavController()
+                val appState = rememberNekoMemoAppState()
                 val snackbarHostState = remember { SnackbarHostState() }
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-                val showBottomBar = currentRoute in listOf(Route.Library.route, Route.Settings.route)
                 val migrationErrorTemplate = stringResource(R.string.migration_error)
                 val migrationErrorTitle = stringResource(R.string.migration_error_title)
                 var showMigrationErrorDialog by remember { mutableStateOf(false) }
@@ -74,33 +73,33 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         snackbarHost = { SnackbarHost(snackbarHostState) },
-                        bottomBar = {
-                            if (showBottomBar) {
-                                BottomNavBar(
-                                    currentRoute = currentRoute ?: Route.Library.route,
-                                    onNavigate = { route ->
-                                        navController.navigate(route.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                )
-                            }
-                        },
                         contentWindowInsets = WindowInsets(0, 0, 0, 0)
                     ) { innerPadding ->
-                        NekoMemoNavigation(
-                            navController = navController,
-                            modifier = Modifier.padding(innerPadding)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                                .consumeWindowInsets(innerPadding)
+                        ) {
+                            BottomNavBar(
+                                destinations = TOP_LEVEL_DESTINATIONS,
+                                currentDestination = appState.currentTopLevelDestination,
+                                onNavigateToDestination = { destination ->
+                                    appState.navigateToTopLevelDestination(destination)
+                                },
+                                modifier = Modifier.align(Alignment.BottomCenter)
+                            )
+
+                            NekoMemoNavigation(
+                                appState = appState,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
 
                 LaunchedEffect(Unit) {
-                    delay(500)
+                    delay(500.milliseconds)
                     if (migrationErrorStore.hasFailed()) {
                         val errorMessage = migrationErrorStore.getLastError()
                         migrationErrorMessage = migrationErrorTemplate.format(errorMessage ?: "Unknown error")

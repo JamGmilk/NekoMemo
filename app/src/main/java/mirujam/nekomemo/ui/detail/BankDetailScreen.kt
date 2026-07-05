@@ -56,7 +56,6 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -67,7 +66,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -75,6 +73,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.component.AppTopBar
@@ -100,7 +99,6 @@ fun BankDetailScreen(
     val bankCategoryId by viewModel.bankCategoryId.collectAsStateWithLifecycle()
     val showEditDialog by viewModel.showEditDialog.collectAsStateWithLifecycle()
     val showAddQuestionDialog by viewModel.showAddQuestionDialog.collectAsStateWithLifecycle()
-    val editingQuestionId by viewModel.editingQuestionId.collectAsStateWithLifecycle()
     val editingQuestion by viewModel.editingQuestion.collectAsStateWithLifecycle()
     val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsStateWithLifecycle()
     val showDeleteBankConfirmDialog by viewModel.showDeleteBankConfirmDialog.collectAsStateWithLifecycle()
@@ -114,11 +112,8 @@ fun BankDetailScreen(
 
     val isSearchActive by remember { derivedStateOf { searchQuery.isNotBlank() } }
     val questionCountText = pluralStringResource(R.plurals.library_questions_count, questionCount, questionCount)
-
-    val context = LocalContext.current
     val exportState by viewModel.exportState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
-
     var exportErrorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(exportErrorMessage) {
@@ -296,6 +291,25 @@ fun BankDetailScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (questionCount > 0) {
+                Button(
+                    onClick = { showTestConfigDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = ButtonShapes
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Quiz,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.detail_start_test))
+                }
+            }
         }
     ) { paddingValues ->
         if (questionCount == 0) {
@@ -334,81 +348,60 @@ fun BankDetailScreen(
                 }
             }
         } else {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                    item {
-                        val categoryName = categories.find { it.id == bankCategoryId }?.displayName() ?: ""
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = AppShapes.large,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = categoryName,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = questionCountText,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    if (isSearchActive) {
-                        item {
+                item {
+                    val categoryName = categories.find { it.id == bankCategoryId }?.displayName() ?: ""
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = AppShapes.large,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = pluralStringResource(R.plurals.library_questions_count, questions.size, questions.size),
+                                text = categoryName,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 4.dp)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = questionCountText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+                }
 
-                    items(questions, key = { it.id }, contentType = { "question" }) { question ->
-                        QuestionCard(
-                            question = question,
-                            onEdit = { viewModel.showEditQuestionDialog(question.id) },
-                            onDelete = { viewModel.deleteQuestion(question) }
+                if (isSearchActive) {
+                    item {
+                        Text(
+                            text = pluralStringResource(R.plurals.library_questions_count, questions.size, questions.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
-
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
 
-                Button(
-                    onClick = { showTestConfigDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = ButtonShapes
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Quiz,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                items(questions, key = { it.id }, contentType = { "question" }) { question ->
+                    QuestionCard(
+                        question = question,
+                        onEdit = { viewModel.showEditQuestionDialog(question.id) },
+                        onDelete = { viewModel.deleteQuestion(question) }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.detail_start_test))
                 }
+
+                item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
     }
