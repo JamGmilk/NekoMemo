@@ -6,6 +6,7 @@ sealed class Route(val route: String, val titleResId: Int) {
     data object Library : Route("library", R.string.nav_library)
     data object Settings : Route("settings", R.string.nav_settings)
     data object Fetcher : Route("fetcher", R.string.nav_fetcher)
+    data object JsonImport : Route("json_import", R.string.nav_json_import)
     data object Extract : Route("extract", R.string.nav_extract)
     data object Detail : Route("detail?bankId={bankId}", R.string.nav_detail) {
         fun createRoute(bankId: Long): String = "detail?bankId=$bankId"

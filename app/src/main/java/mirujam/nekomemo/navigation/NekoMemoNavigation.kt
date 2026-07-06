@@ -35,6 +35,7 @@ import mirujam.nekomemo.R
 import mirujam.nekomemo.ui.detail.BankDetailScreen
 import mirujam.nekomemo.ui.extract.ExtractScreen
 import mirujam.nekomemo.ui.fetcher.FetcherScreen
+import mirujam.nekomemo.ui.jsonimport.JsonImportScreen
 import mirujam.nekomemo.ui.library.LibraryScreen
 import mirujam.nekomemo.ui.settings.SettingsScreen
 import mirujam.nekomemo.ui.test.TestScreen
@@ -201,6 +202,11 @@ fun NekoMemoNavigation(
                     navController.navigate(Route.Fetcher.route) {
                         launchSingleTop = true
                     }
+                },
+                onNavigateToJsonImport = {
+                    navController.navigate(Route.JsonImport.route) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -211,6 +217,17 @@ fun NekoMemoNavigation(
 
         composable(Route.Fetcher.route) {
             FetcherScreen(
+                onNavigateToExtract = {
+                    navController.navigate(Route.Extract.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Route.JsonImport.route) {
+            JsonImportScreen(
                 onNavigateToExtract = {
                     navController.navigate(Route.Extract.route) {
                         launchSingleTop = true

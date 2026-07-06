@@ -1,8 +1,5 @@
 package mirujam.nekomemo.ui.library
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -110,6 +107,7 @@ enum class SortMode(@param:StringRes val labelResId: Int, val icon: ImageVector)
 fun LibraryScreen(
     onBankClick: (Long) -> Unit,
     onNavigateToFetcher: () -> Unit = {},
+    onNavigateToJsonImport: () -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val banks by viewModel.banks.collectAsStateWithLifecycle()
@@ -139,14 +137,6 @@ fun LibraryScreen(
         onExportError = { viewModel.onExportError(it) },
         onClearExportState = { viewModel.clearExportState() }
     )
-
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let {
-            viewModel.importBankFromUri(it, context)
-        }
-    }
 
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let {
@@ -225,12 +215,10 @@ fun LibraryScreen(
                             onDismissRequest = { addMenuExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.library_import_from_file)) },
+                                text = { Text(stringResource(R.string.library_import_from_json)) },
                                 onClick = {
                                     addMenuExpanded = false
-                                    importLauncher.launch(
-                                        arrayOf("application/json", "*/*")
-                                    )
+                                    onNavigateToJsonImport()
                                 },
                                 leadingIcon = {
                                     Icon(
