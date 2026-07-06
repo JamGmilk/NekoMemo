@@ -39,7 +39,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -51,8 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.component.AppTopBar
@@ -75,16 +73,19 @@ fun TestScreen(
     onBack: () -> Unit,
     viewModel: TestViewModel = hiltViewModel()
 ) {
-    val currentIndex by viewModel.currentIndex.collectAsStateWithLifecycle()
-    val bankTitle by viewModel.bankTitle.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val selectedAnswers by viewModel.selectedAnswers.collectAsStateWithLifecycle()
-    val revealedQuestions by viewModel.revealedQuestions.collectAsStateWithLifecycle()
-    val isFinished by viewModel.isFinished.collectAsStateWithLifecycle()
-    val isReviewing by viewModel.isReviewing.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val directAnswer by viewModel.directAnswer.collectAsStateWithLifecycle()
-    val questions by viewModel.activeQuestions.collectAsStateWithLifecycle()
+    val autoNextOnCorrect by viewModel.autoNextOnCorrect.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val currentIndex = uiState.currentIndex
+    val bankTitle = uiState.bankTitle
+    val selectedAnswers = uiState.selectedAnswers
+    val revealedQuestions = uiState.revealedQuestions
+    val isFinished = uiState.isFinished
+    val isReviewing = uiState.isReviewing
+    val isLoading = uiState.isLoading
+    val questions = uiState.questions
 
     Scaffold(
         topBar = {

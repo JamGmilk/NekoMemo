@@ -67,6 +67,7 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -112,6 +113,7 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val banks by viewModel.banks.collectAsStateWithLifecycle()
+    val hasBanks by remember { derivedStateOf { banks.isNotEmpty() } }
     val exportState by viewModel.exportState.collectAsStateWithLifecycle()
     val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
     val questionCounts by viewModel.questionCounts.collectAsStateWithLifecycle()
@@ -191,7 +193,7 @@ fun LibraryScreen(
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.setSearchQuery(it) },
                 actions = {
-                    if (banks.isNotEmpty()) {
+                    if (hasBanks) {
                         TooltipBox(
                             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Below),
                             tooltip = { PlainTooltip { Text(stringResource(R.string.library_sort_and_filter)) } },
@@ -265,7 +267,7 @@ fun LibraryScreen(
                 .padding(paddingValues)
                 .padding(bottom = bottomBarPadding)
         ) {
-            if (banks.isEmpty()) {
+            if (!hasBanks) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center

@@ -43,28 +43,22 @@ class BankDetailViewModel @Inject constructor(
     private val exportDelegate = ExportDelegate(viewModelScope, bankExportImportUseCase)
     val exportState: StateFlow<ExportState> = exportDelegate.exportState
 
-    private val _currentBank = MutableStateFlow<QuestionBank?>(null)
-    val currentBank: StateFlow<QuestionBank?> = _currentBank.asStateFlow()
+    val currentBank: StateFlow<QuestionBank?> = repository.getBankByIdFlow(bankId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val bankTitle: StateFlow<String> = _currentBank
+    val bankTitle: StateFlow<String> = currentBank
         .map { it?.title ?: "" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    val bankCategoryId: StateFlow<Long> = _currentBank
+    val bankCategoryId: StateFlow<Long> = currentBank
         .map { it?.categoryId ?: 0L }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
-
-    val questionCount: StateFlow<Int> = repository.getQuestionCountForBank(bankId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private val _showEditDialog = MutableStateFlow(false)
     val showEditDialog: StateFlow<Boolean> = _showEditDialog.asStateFlow()
 
     private val _showAddQuestionDialog = MutableStateFlow(false)
     val showAddQuestionDialog: StateFlow<Boolean> = _showAddQuestionDialog.asStateFlow()
-
-    private val _editingQuestionId = MutableStateFlow<Long?>(null)
-    val editingQuestionId: StateFlow<Long?> = _editingQuestionId.asStateFlow()
 
     private val _editingQuestion = MutableStateFlow<Question?>(null)
     val editingQuestion: StateFlow<Question?> = _editingQuestion.asStateFlow()
@@ -91,14 +85,6 @@ class BankDetailViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private var pendingDeleteQuestion: Question? = null
-
-    init {
-        viewModelScope.launch {
-            repository.getBankByIdFlow(bankId).collect { bank ->
-                _currentBank.value = bank
-            }
-        }
-    }
 
     fun deleteQuestion(questionId: Long) {
         viewModelScope.launch {
@@ -149,7 +135,7 @@ class BankDetailViewModel @Inject constructor(
     }
 
     fun confirmDeleteBank() {
-        val bank = _currentBank.value ?: return
+        val bank = currentBank.value ?: return
         viewModelScope.launch {
             try {
                 repository.deleteBank(bank)
@@ -162,7 +148,7 @@ class BankDetailViewModel @Inject constructor(
     }
 
     fun prepareExport() {
-        exportDelegate.prepareExport(bankId, _currentBank.value?.title ?: "")
+        exportDelegate.prepareExport(bankId, currentBank.value?.title ?: "")
     }
 
     fun clearExportState() {
@@ -179,7 +165,7 @@ class BankDetailViewModel @Inject constructor(
 
     fun updateBank(title: String, categoryId: Long) {
         viewModelScope.launch {
-            _currentBank.value?.let { bank ->
+            currentBank.value?.let { bank ->
                 val updated = bank.copy(title = title, categoryId = categoryId)
                 repository.updateBank(updated)
                 _showEditDialog.value = false
@@ -213,12 +199,10 @@ class BankDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val question = repository.getQuestionById(questionId) ?: return@launch
             _editingQuestion.value = question
-            _editingQuestionId.value = questionId
         }
     }
 
     fun dismissEditQuestionDialog() {
-        _editingQuestionId.value = null
         _editingQuestion.value = null
     }
 
@@ -226,7 +210,6 @@ class BankDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.updateQuestion(questionId, bankId, text, options, correctIndices, type)
-                _editingQuestionId.value = null
                 _editingQuestion.value = null
             } catch (e: Exception) {
                 Timber.e(e, "Error updating question")

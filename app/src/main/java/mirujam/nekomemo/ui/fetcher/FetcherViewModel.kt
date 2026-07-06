@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import mirujam.nekomemo.ui.model.UiText
 import mirujam.nekomemo.domain.model.ExtractedQuestionBankSerializer
 import mirujam.nekomemo.ui.shared.SharedDataStore
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class FetcherViewModel @Inject constructor(
@@ -36,6 +38,8 @@ class FetcherViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FetcherUiState())
 
     val uiState: StateFlow<FetcherUiState> = _uiState.asStateFlow()
+
+    private var parseJob: Job? = null
 
     fun setCurrentUrl(url: String) {
         _uiState.value = _uiState.value.copy(currentUrl = url, urlInput = url)
@@ -70,7 +74,8 @@ class FetcherViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
+        parseJob?.cancel()
+        parseJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isParsing = true, parseResult = null)
             
             try {
@@ -81,7 +86,7 @@ class FetcherViewModel @Inject constructor(
                     html
                 }
                 
-                val result = withTimeoutOrNull(PARSE_TIMEOUT_MS) {
+                val result = withTimeoutOrNull(PARSE_TIMEOUT_MS.milliseconds) {
                     withContext(Dispatchers.Default) {
                         htmlParserUseCase.parse(safeHtml)
                     }
@@ -167,7 +172,7 @@ class FetcherViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(navigateToExtract = false)
         
         viewModelScope.launch {
-            delay(1000)
+            delay(1000.milliseconds)
             val currentJson = _uiState.value.extractedJson
             if (currentJson != null) {
                 Timber.d("onNavigatedToExtract: Clearing extracted JSON (${currentJson.length} chars) to free memory")

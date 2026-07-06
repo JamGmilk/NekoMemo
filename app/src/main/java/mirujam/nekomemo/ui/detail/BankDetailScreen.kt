@@ -105,13 +105,16 @@ fun BankDetailScreen(
 
     val questions by viewModel.filteredQuestions.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val questionCount by viewModel.questionCount.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     var showTestConfigDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
 
+    val questionCount = questions?.size ?: 0
     val isSearchActive by remember { derivedStateOf { searchQuery.isNotBlank() } }
     val questionCountText = pluralStringResource(R.plurals.library_questions_count, questionCount, questionCount)
+    val bankCategory = remember(bankCategoryId, categories) {
+        categories.find { it.id == bankCategoryId }
+    }
     val exportState by viewModel.exportState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
     var exportErrorMessage by remember { mutableStateOf<String?>(null) }
@@ -365,7 +368,6 @@ fun BankDetailScreen(
                 item { Spacer(modifier = Modifier.height(8.dp)) }
 
                 item {
-                    val categoryName = categories.find { it.id == bankCategoryId }?.displayName() ?: ""
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = AppShapes.large,
@@ -375,7 +377,7 @@ fun BankDetailScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = categoryName,
+                                text = bankCategory?.displayName() ?: "",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

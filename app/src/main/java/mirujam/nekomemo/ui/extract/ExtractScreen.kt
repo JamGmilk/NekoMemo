@@ -128,7 +128,9 @@ fun ExtractScreen(
         }
     }
 
-    val selectedCategory = categories.find { it.id == selectedCategoryId }
+    val selectedCategory = remember(selectedCategoryId, categories) {
+        categories.find { it.id == selectedCategoryId }
+    }
 
     if (showSaveDialog) {
         DialogWithIcon(
@@ -304,10 +306,11 @@ fun ExtractScreen(
                         }
                     }
 
-                    itemsIndexed(bank.questions, key = { _, q -> q.content.hashCode() + 31 * q.type.hashCode() }, contentType = { _, _ -> "question" }) { index, question ->
+                    itemsIndexed(bank.questions, key = { index, _ -> index }, contentType = { _, _ -> "question" }) { index, question ->
                         ExtractedQuestionCard(
                             index = index,
-                            question = question
+                            question = question,
+                            modifier = Modifier.animateItem()
                         )
                     }
 
@@ -337,10 +340,11 @@ fun ExtractScreen(
 @Composable
 private fun ExtractedQuestionCard(
     index: Int,
-    question: ExtractedQuestion
+    question: ExtractedQuestion,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = AppShapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
