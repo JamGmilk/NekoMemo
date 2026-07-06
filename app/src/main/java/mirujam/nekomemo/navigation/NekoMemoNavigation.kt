@@ -69,7 +69,15 @@ class NekoMemoAppState(
     private var selectedTabRoute by mutableStateOf(Route.Library.route)
 
     val currentTopLevelDestination: TopLevelDestination?
-        get() = TOP_LEVEL_DESTINATIONS.find { it.route == selectedTabRoute }
+        @Composable get() {
+            val currentRoute = navController
+                .currentBackStackEntryAsState()
+                .value
+                ?.destination
+                ?.route
+            return TOP_LEVEL_DESTINATIONS.find { it.route == currentRoute }
+                ?: TOP_LEVEL_DESTINATIONS.find { it.route == selectedTabRoute }
+        }
 
     val isTopLevelRoute: Boolean
         @Composable get() {
