@@ -79,36 +79,66 @@ NekoMemo 是一款背题软件，可从学习通网页提取题库，帮助背�
 {
   "version": 1,
   "nekomemo": {
-    "title": "计算机网络题库",
-    "category": "计算机网络",
+    "title": "局部血液循环障碍",
+    "category": "病理学",
     "questions": [
       {
-        "text": "OSI 参考模型共有几层？",
-        "options": ["4 层", "5 层", "6 层", "7 层"],
-        "correctIndices": [3],
+        "text": "慢性淤血时，组织或器官的主要病理变化是",
+        "options": ["实质细胞增生肥大", "间质细胞减少", "实质细胞萎缩变性，间质纤维增生", "实质细胞和间质均无明显变化", "实质细胞坏死，间质钙化"],
+        "correctIndices": [2],
         "type": "SINGLE_CHOICE"
       },
       {
-        "text": "以下哪些属于 TCP/IP 模型的层次？",
-        "options": ["应用层", "传输层", "会话层", "网络层"],
+        "text": "下肢深静脉血栓脱落最常栓塞的器官是",
+        "options": ["脑", "肺", "肾", "脾", "肝"],
+        "correctIndices": [1],
+        "type": "SINGLE_CHOICE"
+      },
+      {
+        "text": "患者，男，60岁，突发持续性胸痛4小时，心电图示ST段弓背向上抬高，血清肌钙蛋白升高。该患者心脏最可能的病变是",
+        "options": ["心肌脂肪变性", "心肌梗死", "心肌纤维化", "病毒性心肌炎", "心肌肥大"],
+        "correctIndices": [1],
+        "type": "SINGLE_CHOICE"
+      },
+      {
+        "text": "心肌梗死的继发性病变包括",
+        "options": ["心脏破裂", "室壁瘤形成", "附壁血栓形成", "心肌脂肪变性", "纤维素性心包炎"],
+        "correctIndices": [0, 1, 2, 4],
+        "type": "MULTIPLE_CHOICE"
+      },
+      {
+        "text": "慢性肺淤血的病理变化包括",
+        "options": ["肺泡壁毛细血管扩张充血", "肺泡腔内出现心力衰竭细胞", "肺泡腔内大量中性粒细胞渗出", "肺间质纤维组织增生", "肺泡腔内出现大量纤维蛋白渗出"],
         "correctIndices": [0, 1, 3],
         "type": "MULTIPLE_CHOICE"
       },
       {
-        "text": "TCP 协议建立连接的过程称为 ________。",
-        "options": ["三次握手"],
-        "correctIndices": [0],
-        "type": "FILL_BLANK"
-      },
-      {
-        "text": "HTTP 是一种无状态协议。",
+        "text": "血栓形成是指血液在活体的心血管腔内凝固形成固体质块的过程。",
         "options": ["正确", "错误"],
         "correctIndices": [0],
         "type": "TRUE_FALSE"
       },
       {
-        "text": "简述 CSMA/CD 的工作原理。",
-        "options": ["先听后发，边听边发，冲突停发，随机重发"],
+        "text": "贫血性梗死常发生于侧支循环丰富且组织疏松的器官，如肺和肠。",
+        "options": ["正确", "错误"],
+        "correctIndices": [1],
+        "type": "TRUE_FALSE"
+      },
+      {
+        "text": "长期淤血可引起淤血性________和淤血性________，最终导致器官实质细胞萎缩坏死。",
+        "options": ["水肿", "硬化"],
+        "correctIndices": [0, 1],
+        "type": "FILL_BLANK"
+      },
+      {
+        "text": "引起肺动脉栓塞的血栓栓子约95%以上来自________静脉血栓。",
+        "options": ["下肢深"],
+        "correctIndices": [0],
+        "type": "FILL_BLANK"
+      },
+      {
+        "text": "简述血栓形成的三个条件（Virchow三联征）。",
+        "options": ["心血管内皮细胞损伤、血流状态改变、血液凝固性增加"],
         "correctIndices": [0],
         "type": "SHORT_ANSWER"
       }
