@@ -26,6 +26,9 @@ class JsonImportViewModel @Inject constructor(
     private val sharedDataStore: SharedDataStore
 ) : ViewModel() {
 
+    /** 文本输入大小上限（2MB），与 Screen 端一致，防止 TextField 渲染 ANR */
+    private val maxInputSize = 2 * 1024 * 1024
+
     data class JsonImportUiState(
         val jsonText: String = "",
         val isParsing: Boolean = false,
@@ -38,7 +41,14 @@ class JsonImportViewModel @Inject constructor(
     val uiState: StateFlow<JsonImportUiState> = _uiState.asStateFlow()
 
     fun setJsonText(text: String) {
-        _uiState.value = _uiState.value.copy(jsonText = text, errorMessage = null)
+        // 限制文本大小，防止超大文本注入 TextField 导致渲染 ANR
+        val limitedText = if (text.length > maxInputSize) {
+            Timber.w("Input text truncated from ${text.length} to $maxInputSize chars")
+            text.take(maxInputSize)
+        } else {
+            text
+        }
+        _uiState.value = _uiState.value.copy(jsonText = limitedText, errorMessage = null)
     }
 
     fun showSnackbar(message: UiText) {
@@ -75,9 +85,9 @@ class JsonImportViewModel @Inject constructor(
             return
         }
 
-        if (jsonString.length > DataValidator.MAX_JSON_SIZE) {
+        if (jsonString.length > maxInputSize) {
             _uiState.value = _uiState.value.copy(
-                errorMessage = UiText.StringResource(R.string.json_import_error_invalid)
+                errorMessage = UiText.StringResource(R.string.json_import_error_text_too_long)
             )
             return
         }

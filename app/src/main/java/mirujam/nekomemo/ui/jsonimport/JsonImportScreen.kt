@@ -3,6 +3,7 @@ package mirujam.nekomemo.ui.jsonimport
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,11 @@ import mirujam.nekomemo.ui.component.LocalSnackbarHostState
 import mirujam.nekomemo.ui.model.UiText
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
+import timber.log.Timber
+import java.io.IOException
+
+/** 文本输入和文件读取的大小上限，防止大文本注入 TextField 导致渲染 ANR */
+private const val MAX_INPUT_SIZE = 2 * 1024 * 1024L // 2MB
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,22 +73,19 @@ fun JsonImportScreen(
     val fileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let {
+        uri?.let { selectedUri ->
             scope.launch {
-                try {
-                    val json = withContext(Dispatchers.IO) {
-                        context.contentResolver.openInputStream(it)?.use { stream ->
-                            java.io.BufferedReader(java.io.InputStreamReader(stream)).use { reader ->
-                                reader.readText()
-                            }
-                        } ?: throw java.io.IOException("Cannot open file")
+                val result = withContext(Dispatchers.IO) {
+                    validateAndReadFile(context, selectedUri)
+                }
+                when (result) {
+                    is FileReadResult.Success -> {
+                        viewModel.setJsonText(result.content)
+                        viewModel.showSnackbar(UiText.StringResource(R.string.json_import_file_loaded))
                     }
-                    viewModel.setJsonText(json)
-                    viewModel.showSnackbar(UiText.StringResource(R.string.json_import_file_loaded))
-                } catch (e: Exception) {
-                    viewModel.showSnackbar(
-                        UiText.StringResource(R.string.json_import_file_read_error, arrayOf(e.message ?: ""))
-                    )
+                    is FileReadResult.Error -> {
+                        viewModel.showSnackbar(result.message)
+                    }
                 }
             }
         }
@@ -109,18 +112,35 @@ fun JsonImportScreen(
     }
 
     fun pasteFromClipboard() {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = clipboard.primaryClip
-        if (clip != null && clip.itemCount > 0) {
-            val text = clip.getItemAt(0).coerceToText(context).toString()
-            if (text.isNotBlank()) {
-                viewModel.setJsonText(text)
-                viewModel.showSnackbar(UiText.StringResource(R.string.json_import_pasted))
-            } else {
-                viewModel.showSnackbar(UiText.StringResource(R.string.json_import_clipboard_empty))
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = clipboard.primaryClip
+                    if (clip != null && clip.itemCount > 0) {
+                        val text = clip.getItemAt(0).coerceToText(context).toString()
+                        if (text.isBlank()) {
+                            FileReadResult.Error(UiText.StringResource(R.string.json_import_clipboard_empty))
+                        } else if (text.length > MAX_INPUT_SIZE) {
+                            FileReadResult.Error(UiText.StringResource(R.string.json_import_error_text_too_long))
+                        } else {
+                            FileReadResult.Success(text)
+                        }
+                    } else {
+                        FileReadResult.Error(UiText.StringResource(R.string.json_import_clipboard_empty))
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to read clipboard")
+                    FileReadResult.Error(UiText.StringResource(R.string.json_import_clipboard_empty))
+                }
             }
-        } else {
-            viewModel.showSnackbar(UiText.StringResource(R.string.json_import_clipboard_empty))
+            when (result) {
+                is FileReadResult.Success -> {
+                    viewModel.setJsonText(result.content)
+                    viewModel.showSnackbar(UiText.StringResource(R.string.json_import_pasted))
+                }
+                is FileReadResult.Error -> viewModel.showSnackbar(result.message)
+            }
         }
     }
 
@@ -161,7 +181,9 @@ fun JsonImportScreen(
                     Text(stringResource(R.string.json_import_paste))
                 }
                 OutlinedButton(
-                    onClick = { fileLauncher.launch(arrayOf("application/json", "*/*")) },
+                    onClick = {
+                        fileLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                    },
                     modifier = Modifier.weight(1f),
                     shape = ButtonShapes
                 ) {
@@ -231,5 +253,141 @@ fun JsonImportScreen(
                 Text(stringResource(R.string.json_import_next))
             }
         }
+    }
+}
+
+// ── 文件读取结果 ──────────────────────────────────────────────
+
+private sealed class FileReadResult {
+    data class Success(val content: String) : FileReadResult()
+    data class Error(val message: UiText) : FileReadResult()
+}
+
+/**
+ * 校验并安全读取文件：
+ * 1. 查询文件大小，拒绝过大文件
+ * 2. 校验 MIME 类型/扩展名，拒绝非文本文件（图片/视频等）
+ * 3. 限制读取字节数，防止恶意超大文件
+ */
+private fun validateAndReadFile(context: Context, uri: Uri): FileReadResult {
+    val resolver = context.contentResolver
+
+    // ── 1. 校验文件格式 ──
+    val mimeType = try {
+        resolver.getType(uri)
+    } catch (e: Exception) {
+        Timber.w(e, "Failed to get MIME type")
+        null
+    }
+
+    // 明确拒绝媒体类型
+    if (mimeType != null) {
+        val nonTextPrefixes = listOf("image/", "video/", "audio/", "application/zip", "application/pdf")
+        if (nonTextPrefixes.any { mimeType.startsWith(it) }) {
+            return FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_format))
+        }
+    }
+
+    // 检查扩展名
+    val fileName = queryDisplayName(resolver, uri)
+    val extension = fileName.substringAfterLast('.', "").lowercase()
+    val hasJsonExtension = extension == "json" || extension == "txt"
+
+    // 如果 MIME 不明确且扩展名也不对，拒绝
+    if (mimeType == null && !hasJsonExtension && fileName.isNotEmpty()) {
+        // 允许无扩展名的文件通过（某些导出工具不带扩展名），但拒绝明显的非 JSON 扩展名
+        val blockedExtensions = listOf("jpg", "jpeg", "png", "gif", "bmp", "webp", "mp4", "avi", "mov",
+            "mp3", "wav", "flac", "zip", "rar", "7z", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+            "apk", "exe", "bin", "db", "sqlite")
+        if (extension in blockedExtensions) {
+            return FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_format))
+        }
+    }
+
+    // ── 2. 校验文件大小 ──
+    val fileSize = queryFileSize(resolver, uri)
+    if (fileSize > MAX_INPUT_SIZE) {
+        Timber.w("File too large: $fileSize bytes (max=$MAX_INPUT_SIZE)")
+        return FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_too_large))
+    }
+
+    // ── 3. 限制读取字节数 ──
+    return try {
+        resolver.openInputStream(uri)?.use { stream ->
+            // 读取最多 MAX_INPUT_SIZE + 1 字节（多读 1 字节用于判断是否超限）
+            val maxBytes = MAX_INPUT_SIZE + 1
+            val buffer = ByteArray(8192)
+            val output = java.io.ByteArrayOutputStream()
+            var totalRead = 0L
+            var exceeded = false
+
+            while (true) {
+                val read = stream.read(buffer)
+                if (read == -1) break
+                totalRead += read
+                if (totalRead > maxBytes) {
+                    exceeded = true
+                    break
+                }
+                output.write(buffer, 0, read)
+            }
+
+            if (exceeded) {
+                Timber.w("File content exceeded limit during read")
+                return FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_too_large))
+            }
+
+            val content = output.toString("UTF-8")
+
+            // ── 4. 基本内容校验：JSON 必须以 { 或 [ 开头 ──
+            val trimmed = content.trimStart()
+            if (trimmed.isEmpty() || (trimmed[0] != '{' && trimmed[0] != '[')) {
+                Timber.w("File content does not start with { or [, likely not JSON")
+                return FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_format))
+            }
+
+            FileReadResult.Success(content)
+        } ?: FileReadResult.Error(
+            UiText.StringResource(R.string.json_import_file_read_error, arrayOf("Cannot open file"))
+        )
+    } catch (e: OutOfMemoryError) {
+        Timber.e(e, "OOM while reading file")
+        FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_too_large))
+    } catch (e: IOException) {
+        Timber.e(e, "IO error while reading file")
+        FileReadResult.Error(
+            UiText.StringResource(R.string.json_import_file_read_error, arrayOf(e.message ?: ""))
+        )
+    } catch (e: Exception) {
+        Timber.e(e, "Unexpected error while reading file")
+        FileReadResult.Error(
+            UiText.StringResource(R.string.json_import_file_read_error, arrayOf(e.message ?: ""))
+        )
+    }
+}
+
+private fun queryFileSize(resolver: android.content.ContentResolver, uri: Uri): Long {
+    return try {
+        resolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst() && !cursor.isNull(0)) {
+                cursor.getLong(0)
+            } else {
+                -1L
+            }
+        } ?: -1L
+    } catch (e: Exception) {
+        Timber.w(e, "Failed to query file size")
+        -1L
+    }
+}
+
+private fun queryDisplayName(resolver: android.content.ContentResolver, uri: Uri): String {
+    return try {
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) ?: "" else ""
+        } ?: ""
+    } catch (e: Exception) {
+        Timber.w(e, "Failed to query display name")
+        ""
     }
 }
