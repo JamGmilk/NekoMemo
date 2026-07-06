@@ -42,8 +42,8 @@ data class ScoreModel(
             var wrong = 0
             var unanswered = 0
             questions.forEachIndexed { index, question ->
-                if (question.type == QuestionType.FILL_BLANK) {
-                    // 填空题答案直接可见，默认算正确
+                if (question.type == QuestionType.FILL_BLANK || question.type == QuestionType.SHORT_ANSWER) {
+                    // 填空题/简答题答案直接可见，默认算正确
                     correct++
                 } else {
                     val selected = selectedAnswers[index]

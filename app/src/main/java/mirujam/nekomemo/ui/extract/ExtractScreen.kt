@@ -391,7 +391,7 @@ private fun ExtractedQuestionCard(
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
-                    } else if (question.type != QuestionType.FILL_BLANK) {
+                    } else if (question.type != QuestionType.FILL_BLANK && question.type != QuestionType.SHORT_ANSWER) {
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
                             contentDescription = null,
@@ -400,7 +400,7 @@ private fun ExtractedQuestionCard(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    val prefix = if (question.type == QuestionType.FILL_BLANK) {
+                    val prefix = if (question.type == QuestionType.FILL_BLANK || question.type == QuestionType.SHORT_ANSWER) {
                         "(${optIndex + 1})"
                     } else {
                         ('A' + optIndex).toString() + "."

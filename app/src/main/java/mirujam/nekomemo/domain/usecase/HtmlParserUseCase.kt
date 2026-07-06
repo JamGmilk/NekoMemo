@@ -92,9 +92,24 @@ class HtmlParserUseCase @Inject constructor() {
                             skippedCount++
                         }
                     }
-                    else -> {
-                        Timber.d("Skipping question $index: unsupported type '$type'")
-                        unsupportedTypeCount++
+                    QuestionType.SHORT_ANSWER -> {
+                        val content = ExtractedQuestion.sanitizeContent(parseQuestionContent(div))
+                        val answerText = parseShortAnswerText(div)
+
+                        if (content.isNotBlank() && answerText.isNotBlank()) {
+                            questions.add(
+                                ExtractedQuestion(
+                                    type = type,
+                                    content = content,
+                                    options = listOf(answerText),
+                                    correctAnswer = answerText,
+                                    correctIndices = listOf(0)
+                                )
+                            )
+                            processedCount++
+                        } else {
+                            skippedCount++
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -230,6 +245,43 @@ class HtmlParserUseCase @Inject constructor() {
             }
         }
         return emptyList()
+    }
+
+    /**
+     * 解析简答题答案文本
+     * 简答题答案可能位于 dd.rightAnswerContent（非填空题区域）、span.rightAnswerContent 或 div.answer_p 中
+     */
+    private fun parseShortAnswerText(div: org.jsoup.nodes.Element): String {
+        // 排除填空题区域，查找简答题答案
+        val shortAnswerDds = div.select("dd.rightAnswerContent").filter { dd ->
+            dd.parents().none { it.hasClass("mark_fill") }
+        }
+        if (shortAnswerDds.isNotEmpty()) {
+            val text = shortAnswerDds.mapNotNull { dd ->
+                dd.text().trim()
+                    .replace(Regex("^\\(\\d+\\)\\s*"), "")
+                    .takeIf { it.isNotBlank() }
+            }.joinToString("; ")
+            if (text.isNotBlank()) return text
+        }
+
+        // 尝试 span.rightAnswerContent（完整文本）
+        val answerSpan = div.select("span.rightAnswerContent").first()
+        if (answerSpan != null) {
+            val text = answerSpan.text().trim()
+            if (text.isNotBlank()) return text
+        }
+
+        // 尝试 div.answer_p
+        val answerDivs = div.select("div.answer_p")
+        if (answerDivs.isNotEmpty()) {
+            val text = answerDivs.map { it.text().trim() }
+                .filter { it.isNotBlank() }
+                .joinToString("; ")
+            if (text.isNotBlank()) return text
+        }
+
+        return ""
     }
 
     private fun lettersToIndices(letters: String): List<Int> {

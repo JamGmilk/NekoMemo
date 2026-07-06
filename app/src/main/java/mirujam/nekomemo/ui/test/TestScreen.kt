@@ -237,7 +237,7 @@ fun TestScreen(
                         Spacer(modifier = Modifier.height(20.dp))
 
                         val isSingleChoice = question.type == QuestionType.SINGLE_CHOICE || question.type == QuestionType.TRUE_FALSE
-                        val isFillBlank = question.type == QuestionType.FILL_BLANK
+                        val isFillBlank = question.type == QuestionType.FILL_BLANK || question.type == QuestionType.SHORT_ANSWER
 
                         if (isFillBlank) {
                             // 填空题：点击显示/隐藏答案文本，序号始终可见

@@ -500,7 +500,7 @@ private fun QuestionCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val isFillBlank = question.type == QuestionType.FILL_BLANK
+            val isFillBlank = question.type == QuestionType.FILL_BLANK || question.type == QuestionType.SHORT_ANSWER
             question.options.forEachIndexed { index, option ->
                 val isCorrect = index in question.correctIndices
                 Row(
@@ -685,8 +685,8 @@ private fun QuestionEditDialog(
     // 切换类型时自动修正 correctIndices
     LaunchedEffect(selectedType) {
         when (selectedType) {
-            QuestionType.SINGLE_CHOICE -> {
-                // 单选题只保留第一个正确索引
+            QuestionType.SINGLE_CHOICE, QuestionType.TRUE_FALSE -> {
+                // 单选题/判断题只保留第一个正确索引
                 if (correctIndices.size > 1) {
                     val first = correctIndices.first()
                     correctIndices.clear()
@@ -695,13 +695,19 @@ private fun QuestionEditDialog(
                     correctIndices.add(0)
                 }
             }
-            QuestionType.FILL_BLANK -> {
-                // 填空题所有答案都正确
+            QuestionType.FILL_BLANK, QuestionType.SHORT_ANSWER -> {
+                // 如果所有选项都为空，精简到 1 个
+                if (options.all { it.isBlank() } && options.size > 1) {
+                    while (options.size > 1) {
+                        options.removeAt(options.lastIndex)
+                    }
+                }
+                // 填空题/简答题所有答案都正确
                 correctIndices.clear()
                 options.indices.forEach { correctIndices.add(it) }
             }
             else -> {
-                // Multiple Choice / True/False: 保持不变，用户手动选择
+                // Multiple Choice: 保持不变，用户手动选择
             }
         }
     }
@@ -709,7 +715,9 @@ private fun QuestionEditDialog(
     val typeOptions = listOf(
         QuestionType.SINGLE_CHOICE to stringResource(R.string.question_type_single),
         QuestionType.MULTIPLE_CHOICE to stringResource(R.string.question_type_multiple),
-        QuestionType.FILL_BLANK to stringResource(R.string.question_type_fill_blank)
+        QuestionType.TRUE_FALSE to stringResource(R.string.question_type_true_false),
+        QuestionType.FILL_BLANK to stringResource(R.string.question_type_fill_blank),
+        QuestionType.SHORT_ANSWER to stringResource(R.string.question_type_short_answer)
     )
 
     DialogWithIcon(
@@ -759,9 +767,10 @@ private fun QuestionEditDialog(
 
             Spacer(modifier = Modifier.height(6.dp))
 
+            val isFillBlank = selectedType == QuestionType.FILL_BLANK || selectedType == QuestionType.SHORT_ANSWER
+            val isSingleChoice = selectedType == QuestionType.SINGLE_CHOICE || selectedType == QuestionType.TRUE_FALSE
+
             Column {
-                val isFillBlank = selectedType == QuestionType.FILL_BLANK
-                val isSingleChoice = selectedType == QuestionType.SINGLE_CHOICE
                 options.forEachIndexed { index, option ->
                     val isChecked = index in correctIndices
                     Row(
@@ -821,7 +830,8 @@ private fun QuestionEditDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (options.size > 2) {
+                val minOptionCount = if (isFillBlank) 1 else 2
+                if (options.size > minOptionCount) {
                     TextButton(onClick = {
                         val removedIndex = options.lastIndex
                         options.removeAt(removedIndex)
@@ -839,8 +849,8 @@ private fun QuestionEditDialog(
                 if (options.size < 8) {
                     TextButton(onClick = {
                         options.add("")
-                        // 填空题新选项自动加入正确索引
-                        if (selectedType == QuestionType.FILL_BLANK) {
+                        // 填空题/简答题新选项自动加入正确索引
+                        if (selectedType == QuestionType.FILL_BLANK || selectedType == QuestionType.SHORT_ANSWER) {
                             correctIndices.add(options.lastIndex)
                         }
                     }) {
