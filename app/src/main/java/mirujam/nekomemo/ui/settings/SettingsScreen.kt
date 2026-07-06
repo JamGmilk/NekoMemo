@@ -260,7 +260,6 @@ fun SettingsScreen(
                 title = stringResource(Route.Settings.titleResId)
             )
         },
-        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(

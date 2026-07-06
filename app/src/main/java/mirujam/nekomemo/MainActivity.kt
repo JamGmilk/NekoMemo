@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -81,19 +84,25 @@ class MainActivity : ComponentActivity() {
                                 .padding(innerPadding)
                                 .consumeWindowInsets(innerPadding)
                         ) {
-                            BottomNavBar(
-                                destinations = TOP_LEVEL_DESTINATIONS,
-                                currentDestination = appState.currentTopLevelDestination,
-                                onNavigateToDestination = { destination ->
-                                    appState.navigateToTopLevelDestination(destination)
-                                },
-                                modifier = Modifier.align(Alignment.BottomCenter)
-                            )
-
                             NekoMemoNavigation(
                                 appState = appState,
                                 modifier = Modifier.fillMaxSize()
                             )
+
+                            AnimatedVisibility(
+                                visible = appState.isTopLevelRoute,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                                modifier = Modifier.align(Alignment.BottomCenter)
+                            ) {
+                                BottomNavBar(
+                                    destinations = TOP_LEVEL_DESTINATIONS,
+                                    currentDestination = appState.currentTopLevelDestination,
+                                    onNavigateToDestination = { destination ->
+                                        appState.navigateToTopLevelDestination(destination)
+                                    }
+                                )
+                            }
                         }
                     }
                 }

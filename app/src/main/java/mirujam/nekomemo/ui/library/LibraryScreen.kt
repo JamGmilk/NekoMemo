@@ -75,7 +75,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -98,7 +97,7 @@ import mirujam.nekomemo.ui.theme.AppShapes
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class SortMode(@StringRes val labelResId: Int, val icon: ImageVector) {
+enum class SortMode(@param:StringRes val labelResId: Int, val icon: ImageVector) {
     DATE_DESC(R.string.library_sort_newest, Icons.Outlined.ArrowDownward),
     DATE_ASC(R.string.library_sort_oldest, Icons.Outlined.ArrowUpward),
     TITLE_ASC(R.string.library_sort_az, Icons.Outlined.SortByAlpha),
@@ -258,7 +257,6 @@ fun LibraryScreen(
                 }
             )
         },
-        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(

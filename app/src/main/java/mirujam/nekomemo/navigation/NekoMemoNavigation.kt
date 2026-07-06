@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
@@ -29,6 +28,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import mirujam.nekomemo.R
@@ -70,6 +70,16 @@ class NekoMemoAppState(
 
     val currentTopLevelDestination: TopLevelDestination?
         get() = TOP_LEVEL_DESTINATIONS.find { it.route == selectedTabRoute }
+
+    val isTopLevelRoute: Boolean
+        @Composable get() {
+            val currentRoute = navController
+                .currentBackStackEntryAsState()
+                .value
+                ?.destination
+                ?.route
+            return currentRoute in TOP_LEVEL_ROUTES
+        }
 
     fun navigateToTopLevelDestination(destination: TopLevelDestination) {
         selectedTabRoute = destination.route
@@ -138,9 +148,9 @@ fun NekoMemoNavigation(
         enterTransition = {
             if (isTabSwitch()) {
                 if (targetState.destination.route == Route.Settings.route) {
-                    slideInHorizontally(tween(300)) { it }
+                    slideInHorizontally(tween(200)) { it }
                 } else {
-                    slideInHorizontally(tween(300)) { -it }
+                    slideInHorizontally(tween(200)) { -it }
                 }
             } else {
                 fadeIn(tween(300))
@@ -148,11 +158,7 @@ fun NekoMemoNavigation(
         },
         exitTransition = {
             if (isTabSwitch()) {
-                if (initialState.destination.route == Route.Library.route) {
-                    slideOutHorizontally(tween(300)) { -it }
-                } else {
-                    slideOutHorizontally(tween(300)) { it }
-                }
+                fadeOut(tween(200))
             } else {
                 fadeOut(tween(300))
             }
@@ -160,9 +166,9 @@ fun NekoMemoNavigation(
         popEnterTransition = {
             if (isTabSwitch()) {
                 if (targetState.destination.route == Route.Settings.route) {
-                    slideInHorizontally(tween(300)) { it }
+                    slideInHorizontally(tween(200)) { it }
                 } else {
-                    slideInHorizontally(tween(300)) { -it }
+                    slideInHorizontally(tween(200)) { -it }
                 }
             } else {
                 fadeIn(tween(300))
@@ -170,11 +176,7 @@ fun NekoMemoNavigation(
         },
         popExitTransition = {
             if (isTabSwitch()) {
-                if (initialState.destination.route == Route.Library.route) {
-                    slideOutHorizontally(tween(300)) { -it }
-                } else {
-                    slideOutHorizontally(tween(300)) { it }
-                }
+                fadeOut(tween(200))
             } else {
                 fadeOut(tween(300))
             }
