@@ -127,15 +127,20 @@ class JsonImportViewModel @Inject constructor(
      * 2. 导出格式（BankExportImportUseCase）：{ version, nekomemo: { title, category, questions: [{ text, options, correctIndices, type }] } }
      */
     private fun parseAndNormalize(jsonString: String): String? {
+        // 预处理：去除 BOM、提取首个 { 和最后一个 } 之间的内容，
+        // 容错用户误加的前后空白、Markdown 代码围栏（```json ... ```）、注释文字等
+        val normalized = extractJsonContent(jsonString)
+        Timber.d("extractJsonContent: ${jsonString.length} -> ${normalized.length} chars")
+
         // 先尝试抓取格式
-        val bank = ExtractedQuestionBankSerializer.fromJson(jsonString)
+        val bank = ExtractedQuestionBankSerializer.fromJson(normalized)
         if (bank != null && bank.questions.isNotEmpty()) {
             Timber.d("Parsed as extract format: name='${bank.name}', questions=${bank.questions.size}")
             return ExtractedQuestionBankSerializer.toJson(bank)
         }
 
         // 尝试导出格式
-        val exportBank = parseExportFormat(jsonString)
+        val exportBank = parseExportFormat(normalized)
         if (exportBank != null && exportBank.questions.isNotEmpty()) {
             Timber.d("Parsed as export format: name='${exportBank.name}', questions=${exportBank.questions.size}")
             return ExtractedQuestionBankSerializer.toJson(exportBank)
@@ -143,6 +148,46 @@ class JsonImportViewModel @Inject constructor(
 
         Timber.w("Failed to parse JSON in either format")
         return null
+    }
+
+    /**
+     * 预处理 JSON 文本，提高容错性：
+     * 1. 去除 UTF-8 BOM 字符
+     * 2. 提取首个 { 和最后一个 } 之间的内容（或 [ ... ]）
+     *    - 处理 Markdown 代码围栏：```json\n{...}\n```
+     *    - 处理用户误加的前后文字：注释、序号、说明文字等
+     *    - 纯空格/换行虽然解析器本身能处理，这里也一并 trim
+     *
+     * 安全性：JSON 对象的首字符必然是 {，尾字符必然是 }，
+     * 字符串内部的大括号不会成为整个文本的第一个/最后一个，因此截取是安全的。
+     */
+    private fun extractJsonContent(input: String): String {
+        if (input.isBlank()) return input
+
+        // 去除 UTF-8 BOM
+        var s = input
+        if (s.startsWith("\uFEFF")) {
+            s = s.substring(1)
+        }
+
+        // 查找对象格式 { ... }
+        val firstBrace = s.indexOf('{')
+        val lastBrace = s.lastIndexOf('}')
+
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+            return s.substring(firstBrace, lastBrace + 1)
+        }
+
+        // 查找数组格式 [ ... ]
+        val firstBracket = s.indexOf('[')
+        val lastBracket = s.lastIndexOf(']')
+
+        if (firstBracket >= 0 && lastBracket > firstBracket) {
+            return s.substring(firstBracket, lastBracket + 1)
+        }
+
+        // 未找到 JSON 结构，返回 trim 后的内容让解析器报错
+        return s.trim()
     }
 
     private fun parseExportFormat(jsonString: String): ExtractedQuestionBank? {

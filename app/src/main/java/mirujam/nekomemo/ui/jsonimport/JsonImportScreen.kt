@@ -339,10 +339,11 @@ private fun validateAndReadFile(context: Context, uri: Uri): FileReadResult {
 
             val content = output.toString("UTF-8")
 
-            // ── 4. 基本内容校验：JSON 必须以 { 或 [ 开头 ──
-            val trimmed = content.trimStart()
-            if (trimmed.isEmpty() || (trimmed[0] != '{' && trimmed[0] != '[')) {
-                Timber.w("File content does not start with { or [, likely not JSON")
+            // ── 4. 基本内容校验：JSON 必须包含 { 或 [ ──
+            // 不要求首字符为 {/[，因为 ViewModel 会做 extractJsonContent 预处理，
+            // 容忍 Markdown 代码围栏、前后注释等。这里只拒绝明显不含 JSON 结构的文件。
+            if (!content.contains('{') && !content.contains('[')) {
+                Timber.w("File content does not contain { or [, likely not JSON")
                 return FileReadResult.Error(UiText.StringResource(R.string.json_import_error_file_format))
             }
 
