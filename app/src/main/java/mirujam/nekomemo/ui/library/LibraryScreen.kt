@@ -122,7 +122,7 @@ fun LibraryScreen(
     val sortMode by viewModel.sortMode.collectAsStateWithLifecycle()
     val filteredBanks by viewModel.filteredBanks.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val categoryMap = remember(categories) { categories.associate { it.id to it } }
+    val categoryMap = remember(categories) { categories.associateBy { it.id } }
     val selectedCategoryId by viewModel.selectedCategoryId.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current

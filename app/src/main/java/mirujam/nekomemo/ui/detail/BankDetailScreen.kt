@@ -312,7 +312,14 @@ fun BankDetailScreen(
             }
         }
     ) { paddingValues ->
-        if (questionCount == 0) {
+        val questionList = questions
+        if (questionList == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            )
+        } else if (questionCount == 0) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -385,7 +392,7 @@ fun BankDetailScreen(
                 if (isSearchActive) {
                     item {
                         Text(
-                            text = pluralStringResource(R.plurals.library_questions_count, questions.size, questions.size),
+                            text = pluralStringResource(R.plurals.library_questions_count, questionList.size, questionList.size),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -393,11 +400,12 @@ fun BankDetailScreen(
                     }
                 }
 
-                items(questions, key = { it.id }, contentType = { "question" }) { question ->
+                items(questionList, key = { it.id }, contentType = { "question" }) { question ->
                     QuestionCard(
                         question = question,
                         onEdit = { viewModel.showEditQuestionDialog(question.id) },
-                        onDelete = { viewModel.deleteQuestion(question) }
+                        onDelete = { viewModel.deleteQuestion(question) },
+                        modifier = Modifier.animateItem()
                     )
                 }
 
@@ -412,10 +420,11 @@ fun BankDetailScreen(
 private fun QuestionCard(
     question: QuestionUiModel,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = AppShapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow

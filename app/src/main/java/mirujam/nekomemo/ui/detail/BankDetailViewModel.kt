@@ -81,14 +81,14 @@ class BankDetailViewModel @Inject constructor(
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val filteredQuestions: StateFlow<List<QuestionUiModel>> = _searchQuery
-        .debounce(300)
+    val filteredQuestions: StateFlow<List<QuestionUiModel>?> = _searchQuery
+        .debounce { query -> if (query.isBlank()) 0L else 300L }
         .flatMapLatest { query ->
             repository.queryQuestionsForBank(bankId, query).map { list ->
                 list.map { QuestionUiModel.fromDomainModel(it) }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private var pendingDeleteQuestion: Question? = null
 
