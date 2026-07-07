@@ -51,6 +51,13 @@ class ExtractViewModel @Inject constructor(
     private val _importedCategoryName = MutableStateFlow<String?>(null)
 
     /**
+     * 建议的分类 ID。Screen 监听此值，当导入分类就绪时自动选中它。
+     * 值为 null 表示无需自动选中，由 Screen 的默认逻辑处理。
+     */
+    private val _suggestedCategoryId = MutableStateFlow<Long?>(null)
+    val suggestedCategoryId: StateFlow<Long?> = _suggestedCategoryId.asStateFlow()
+
+    /**
      * 合并后的分类列表：导入分类名（如存在且不重复）排在首位，其余按数据库顺序排列。
      */
     val categories: StateFlow<List<Category>> = combine(
@@ -77,6 +84,11 @@ class ExtractViewModel @Inject constructor(
             // 提取导入的分类名，用于优先展示
             val importedCategory = parsed?.category?.trim()?.takeIf { it.isNotBlank() }
             _importedCategoryName.value = importedCategory
+            if (importedCategory != null) {
+                // 查询 DB 中是否已有同名分类，使用真实 ID；否则用虚拟 ID（-1L）
+                val existingCategory = categoryRepository.getCategoryByName(importedCategory)
+                _suggestedCategoryId.value = existingCategory?.id ?: VIRTUAL_IMPORTED_CATEGORY_ID
+            }
 
             _questionBankFlow.value = parsed
         } else {

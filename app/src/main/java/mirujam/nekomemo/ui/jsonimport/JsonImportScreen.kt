@@ -6,6 +6,10 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentPaste
@@ -34,8 +39,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -43,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mirujam.nekomemo.R
@@ -54,6 +64,7 @@ import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
 import timber.log.Timber
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 文本输入和文件读取的大小上限，防止大文本注入 TextField 导致渲染 ANR */
 private const val MAX_INPUT_SIZE = 2 * 1024 * 1024L // 2MB
@@ -69,6 +80,15 @@ fun JsonImportScreen(
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
+    var pasted by remember { mutableStateOf(false) }
+
+    // Reset paste indicator after 1 second
+    LaunchedEffect(pasted) {
+        if (pasted) {
+            delay(1000L.milliseconds)
+            pasted = false
+        }
+    }
 
     val fileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -136,7 +156,7 @@ fun JsonImportScreen(
             when (result) {
                 is FileReadResult.Success -> {
                     viewModel.setJsonText(result.content)
-                    viewModel.showSnackbar(UiText.StringResource(R.string.json_import_pasted))
+                    pasted = true
                 }
                 is FileReadResult.Error -> viewModel.showSnackbar(result.message)
             }
@@ -170,14 +190,40 @@ fun JsonImportScreen(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val pasteBorderColor by animateColorAsState(
+                    targetValue = if (pasted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.outlineVariant,
+                    animationSpec = tween(300)
+                )
                 OutlinedButton(
                     onClick = { pasteFromClipboard() },
                     modifier = Modifier.weight(1f),
-                    shape = ButtonShapes
+                    shape = ButtonShapes,
+                    border = BorderStroke(1.dp, pasteBorderColor)
                 ) {
-                    Icon(Icons.Outlined.ContentPaste, null, modifier = Modifier.size(18.dp))
+                    Crossfade(
+                        targetState = pasted,
+                        animationSpec = tween(300)
+                    ) { isPasted ->
+                        if (isPasted) {
+                            Icon(
+                                Icons.Outlined.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = Color(0xFF4CAF50)
+                            )
+                        } else {
+                            Icon(Icons.Outlined.ContentPaste, null, modifier = Modifier.size(18.dp))
+                        }
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.json_import_paste))
+                    val textColor by animateColorAsState(
+                        targetValue = if (pasted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
+                        animationSpec = tween(300)
+                    )
+                    Text(
+                        text = if (pasted) stringResource(R.string.json_import_pasted) else stringResource(R.string.json_import_paste),
+                        color = textColor
+                    )
                 }
                 OutlinedButton(
                     onClick = {

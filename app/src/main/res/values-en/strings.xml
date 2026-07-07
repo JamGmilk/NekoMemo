@@ -110,7 +110,7 @@
     <string name="json_import_error_invalid">Invalid JSON format, cannot parse</string>
     <string name="json_import_error_no_questions">No valid questions found, please check the JSON content</string>
     <string name="json_import_clipboard_empty">Clipboard is empty</string>
-    <string name="json_import_pasted">Pasted from clipboard</string>
+    <string name="json_import_pasted">Pasted</string>
     <string name="json_import_file_read_error">Failed to read file: %1$s</string>
     <string name="json_import_error_file_too_large">File too large, please select a JSON file under 2MB</string>
     <string name="json_import_error_file_format">Unsupported file format, please select a .json or text file</string>

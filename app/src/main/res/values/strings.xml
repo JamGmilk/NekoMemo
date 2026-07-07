@@ -104,7 +104,7 @@
     <string name="json_import_error_invalid">JSON 格式无效，无法解析</string>
     <string name="json_import_error_no_questions">未找到有效题目，请检查 JSON 内容</string>
     <string name="json_import_clipboard_empty">剪贴板为空</string>
-    <string name="json_import_pasted">已从剪贴板粘贴</string>
+    <string name="json_import_pasted">已粘贴</string>
     <string name="json_import_file_read_error">读取文件失败：%1$s</string>
     <string name="json_import_error_file_too_large">文件过大，请选择小于 2MB 的 JSON 文件</string>
     <string name="json_import_error_file_format">文件格式不支持，请选择 .json 或文本文件</string>

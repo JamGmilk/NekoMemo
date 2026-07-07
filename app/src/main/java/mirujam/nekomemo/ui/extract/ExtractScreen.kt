@@ -74,6 +74,7 @@ fun ExtractScreen(
     val saveResult by viewModel.saveResult.collectAsStateWithLifecycle()
     val isSaveSuccess by viewModel.isSaveSuccess.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val suggestedCategoryId by viewModel.suggestedCategoryId.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -115,6 +116,13 @@ fun ExtractScreen(
             } else if (!categories.any { it.id == selectedCategoryId }) {
                 selectedCategoryId = categories.first().id
             }
+        }
+    }
+
+    // 当导入分类就绪时，自动选中它（排在首位的分类）
+    LaunchedEffect(suggestedCategoryId) {
+        if (suggestedCategoryId != null) {
+            selectedCategoryId = suggestedCategoryId!!
         }
     }
 
