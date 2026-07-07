@@ -135,14 +135,14 @@ class JsonImportViewModel @Inject constructor(
         // 先尝试抓取格式
         val bank = ExtractedQuestionBankSerializer.fromJson(normalized)
         if (bank != null && bank.questions.isNotEmpty()) {
-            Timber.d("Parsed as extract format: name='${bank.name}', questions=${bank.questions.size}")
+            Timber.d("Parsed as extract format: name='${bank.name}', questions=${bank.questions.size}, category='${bank.category}'")
             return ExtractedQuestionBankSerializer.toJson(bank)
         }
 
         // 尝试导出格式
         val exportBank = parseExportFormat(normalized)
         if (exportBank != null && exportBank.questions.isNotEmpty()) {
-            Timber.d("Parsed as export format: name='${exportBank.name}', questions=${exportBank.questions.size}")
+            Timber.d("Parsed as export format: name='${exportBank.name}', questions=${exportBank.questions.size}, category='${exportBank.category}'")
             return ExtractedQuestionBankSerializer.toJson(exportBank)
         }
 
@@ -199,6 +199,8 @@ class JsonImportViewModel @Inject constructor(
             val name = bankJson.optString("title", bankJson.optString("name", "Imported Bank"))
                 .ifBlank { "Imported Bank" }
 
+            val category = bankJson.optString("category", "").takeIf { it.isNotBlank() }
+
             val questionsArray = bankJson.optJSONArray("questions")
                 ?: return ExtractedQuestionBank(name, emptyList())
 
@@ -252,7 +254,7 @@ class JsonImportViewModel @Inject constructor(
                 }
             }
 
-            ExtractedQuestionBank(name, validQuestions, skippedCount = skippedCount)
+            ExtractedQuestionBank(name, validQuestions, category = category, skippedCount = skippedCount)
         } catch (e: Exception) {
             Timber.e(e, "parseExportFormat: Failed to parse as export format")
             null

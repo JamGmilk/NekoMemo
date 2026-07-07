@@ -20,6 +20,7 @@ data class ExtractedQuestion(
 data class ExtractedQuestionBank(
     val name: String,
     val questions: List<ExtractedQuestion>,
+    val category: String? = null,
     val skippedCount: Int = 0,
     val unsupportedTypeCount: Int = 0
 )

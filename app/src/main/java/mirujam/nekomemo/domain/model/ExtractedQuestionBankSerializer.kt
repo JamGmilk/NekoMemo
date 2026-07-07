@@ -10,6 +10,7 @@ object ExtractedQuestionBankSerializer {
             val json = org.json.JSONObject()
 
             json.put("name", bank.name.ifBlank { "Untitled Bank" })
+            bank.category?.let { json.put("category", it) }
             json.put("skippedCount", bank.skippedCount.coerceAtLeast(0))
             json.put("unsupportedTypeCount", bank.unsupportedTypeCount.coerceAtLeast(0))
 
@@ -84,6 +85,7 @@ object ExtractedQuestionBankSerializer {
             val json = org.json.JSONObject(jsonString)
 
             val name = json.optString("name", "Untitled Bank").ifBlank { "Untitled Bank" }
+            val category = json.optString("category", "").takeIf { it.isNotBlank() }
             val skippedCount = json.optInt("skippedCount", 0).coerceAtLeast(0)
             val unsupportedTypeCount = json.optInt("unsupportedTypeCount", 0).coerceAtLeast(0)
 
@@ -91,12 +93,12 @@ object ExtractedQuestionBankSerializer {
 
             if (questionsArray == null) {
                 Timber.d("fromJson: No 'questions' array found, creating empty bank with name='$name'")
-                return ExtractedQuestionBank(name, emptyList(), skippedCount, unsupportedTypeCount)
+                return ExtractedQuestionBank(name, emptyList(), category = category, skippedCount = skippedCount, unsupportedTypeCount = unsupportedTypeCount)
             }
 
             if (questionsArray.length() == 0) {
                 Timber.d("fromJson: Empty questions array for bank '$name'")
-                return ExtractedQuestionBank(name, emptyList(), skippedCount, unsupportedTypeCount)
+                return ExtractedQuestionBank(name, emptyList(), category = category, skippedCount = skippedCount, unsupportedTypeCount = unsupportedTypeCount)
             }
 
             val validQuestions = mutableListOf<ExtractedQuestion>()
@@ -160,10 +162,10 @@ object ExtractedQuestionBankSerializer {
 
             if (validQuestions.isEmpty() && questionsArray.length() > 0) {
                 Timber.e("fromJson: All ${questionsArray.length()} questions failed to parse!")
-                return ExtractedQuestionBank(name, emptyList(), skippedCount, unsupportedTypeCount + questionsArray.length())
+                return ExtractedQuestionBank(name, emptyList(), category = category, skippedCount = skippedCount, unsupportedTypeCount = unsupportedTypeCount + questionsArray.length())
             }
 
-            val result = ExtractedQuestionBank(name, validQuestions, skippedCount, unsupportedTypeCount)
+            val result = ExtractedQuestionBank(name, validQuestions, category = category, skippedCount = skippedCount, unsupportedTypeCount = unsupportedTypeCount)
             Timber.d("fromJson: Successfully parsed ${validQuestions.size}/${questionsArray.length()} questions for bank '$name'")
             result
 
