@@ -106,7 +106,6 @@
     <string name="json_import_clipboard_empty">剪贴板为空</string>
     <string name="json_import_pasted">已从剪贴板粘贴</string>
     <string name="json_import_file_read_error">读取文件失败：%1$s</string>
-    <string name="json_import_file_loaded">已加载文件内容</string>
     <string name="json_import_error_file_too_large">文件过大，请选择小于 2MB 的 JSON 文件</string>
     <string name="json_import_error_file_format">文件格式不支持，请选择 .json 或文本文件</string>
     <string name="json_import_error_text_too_long">内容过长，请控制在 2MB 以内</string>

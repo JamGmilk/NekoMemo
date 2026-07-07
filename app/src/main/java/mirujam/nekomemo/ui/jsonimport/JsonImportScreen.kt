@@ -81,7 +81,6 @@ fun JsonImportScreen(
                 when (result) {
                     is FileReadResult.Success -> {
                         viewModel.setJsonText(result.content)
-                        viewModel.showSnackbar(UiText.StringResource(R.string.json_import_file_loaded))
                     }
                     is FileReadResult.Error -> {
                         viewModel.showSnackbar(result.message)

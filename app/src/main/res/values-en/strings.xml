@@ -112,7 +112,6 @@
     <string name="json_import_clipboard_empty">Clipboard is empty</string>
     <string name="json_import_pasted">Pasted from clipboard</string>
     <string name="json_import_file_read_error">Failed to read file: %1$s</string>
-    <string name="json_import_file_loaded">File content loaded</string>
     <string name="json_import_error_file_too_large">File too large, please select a JSON file under 2MB</string>
     <string name="json_import_error_file_format">Unsupported file format, please select a .json or text file</string>
     <string name="json_import_error_text_too_long">Content too long, please keep it under 2MB</string>
