@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import mirujam.nekomemo.R
 import mirujam.nekomemo.data.preferences.TestPreferenceRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
+import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.model.ScoreModel
 import mirujam.nekomemo.ui.model.UiText
@@ -56,7 +57,13 @@ class TestViewModel @Inject constructor(
         .map { domainQuestions ->
             val models = QuestionUiModel.fromDomainModels(domainQuestions)
             if (shuffleOptions) {
-                models.map { model -> shuffleOptionsForModel(model) }
+                models.map { model ->
+                    if (model.type == QuestionType.SINGLE_CHOICE || model.type == QuestionType.MULTIPLE_CHOICE) {
+                        shuffleOptionsForModel(model)
+                    } else {
+                        model
+                    }
+                }
             } else {
                 models
             }
