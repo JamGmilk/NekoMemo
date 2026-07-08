@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
+import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.Question
 import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.domain.model.QuestionType
@@ -31,7 +32,7 @@ class BankExportImportUseCase @Inject constructor(
         val questions = repository.getQuestionsForBankSync(bankId)
 
         val categoryName = categoryRepository.getCategoryById(bank.categoryId)?.name
-            ?: CategoryRepository.DEFAULT_CATEGORY_NAME
+            ?: Category.DEFAULT_CATEGORY_NAME
 
         val json = JSONObject()
         json.put("title", bank.title)
@@ -218,7 +219,7 @@ class BankExportImportUseCase @Inject constructor(
     private suspend fun resolveCategoryId(bankJson: JSONObject): Long {
         val rawCategory = bankJson.optString("category", "")
         val categoryName = DataValidator.validateCategory(
-            rawCategory.ifBlank { CategoryRepository.DEFAULT_CATEGORY_NAME }
+            rawCategory.ifBlank { Category.DEFAULT_CATEGORY_NAME }
         )
 
         val existingCategory = categoryRepository.getCategoryByName(categoryName)
@@ -227,7 +228,7 @@ class BankExportImportUseCase @Inject constructor(
         }
 
         return categoryRepository.addCategory(categoryName).getOrElse {
-            categoryRepository.getCategoryByName(CategoryRepository.DEFAULT_CATEGORY_NAME)?.id
+            categoryRepository.getCategoryByName(Category.DEFAULT_CATEGORY_NAME)?.id
                 ?: throw IllegalStateException("Default category not found")
         }
     }

@@ -156,7 +156,7 @@ class ExtractViewModel @Inject constructor(
             return result.getOrElse {
                 Timber.e(it, "Failed to auto-create category, falling back to default")
                 // 获取默认分类的 ID
-                val defaultCategory = categoryRepository.getCategoryByName(CategoryRepository.DEFAULT_CATEGORY_NAME)
+                val defaultCategory = categoryRepository.getCategoryByName(Category.DEFAULT_CATEGORY_NAME)
                 return defaultCategory?.id ?: 1L
             }
         }

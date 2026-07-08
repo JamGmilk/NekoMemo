@@ -26,6 +26,7 @@ data class QuestionUiModel(
     }
 }
 
+@Immutable
 data class ScoreModel(
     val correct: Int,
     val wrong: Int,

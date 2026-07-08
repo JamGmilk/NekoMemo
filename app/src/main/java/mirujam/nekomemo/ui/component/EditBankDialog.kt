@@ -30,7 +30,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
-import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.domain.validator.DataValidator
 import mirujam.nekomemo.ui.theme.AppShapes
 
@@ -87,7 +86,7 @@ fun EditBankDialog(
                     onExpandedChange = { expanded = !expanded }
                 ) {
                     val interactionSource = remember { MutableInteractionSource() }
-                    val displayName = if (selectedCategoryName == CategoryRepository.DEFAULT_CATEGORY_NAME) {
+                    val displayName = if (selectedCategoryName == Category.DEFAULT_CATEGORY_NAME) {
                         stringResource(R.string.category_general_display)
                     } else selectedCategoryName
                     Box(
@@ -126,7 +125,7 @@ fun EditBankDialog(
                         onDismissRequest = { expanded = false }
                     ) {
                         categories.forEach { category ->
-                            val displayName = if (category.name == CategoryRepository.DEFAULT_CATEGORY_NAME) {
+                            val displayName = if (category.name == Category.DEFAULT_CATEGORY_NAME) {
                                 stringResource(R.string.category_general_display)
                             } else category.name
                             DropdownMenuItem(

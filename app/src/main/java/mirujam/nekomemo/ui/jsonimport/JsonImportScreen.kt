@@ -191,7 +191,7 @@ fun JsonImportScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val pasteBorderColor by animateColorAsState(
-                    targetValue = if (pasted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.outlineVariant,
+                    targetValue = if (pasted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                     animationSpec = tween(300)
                 )
                 OutlinedButton(
@@ -207,9 +207,9 @@ fun JsonImportScreen(
                         if (isPasted) {
                             Icon(
                                 Icons.Outlined.Check,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.json_import_paste),
                                 modifier = Modifier.size(18.dp),
-                                tint = Color(0xFF4CAF50)
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         } else {
                             Icon(Icons.Outlined.ContentPaste, null, modifier = Modifier.size(18.dp))

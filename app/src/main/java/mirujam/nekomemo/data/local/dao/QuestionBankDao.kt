@@ -33,7 +33,7 @@ interface QuestionBankDao {
     @Query("UPDATE question_banks SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun reassignCategory(oldCategoryId: Long, newCategoryId: Long)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBank(bank: QuestionBankEntity): Long
 
     @Update

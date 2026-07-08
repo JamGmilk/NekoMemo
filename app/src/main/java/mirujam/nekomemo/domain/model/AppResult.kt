@@ -1,5 +1,7 @@
 package mirujam.nekomemo.domain.model
 
+import android.content.Context
+
 sealed class AppResult<out T> {
     data class Success<T>(val data: T) : AppResult<T>()
     data class Error(
@@ -17,8 +19,12 @@ sealed class UserMessage {
             if (other !is Resource) return false
             return resId == other.resId && args.contentEquals(other.args)
         }
-
         override fun hashCode(): Int = 31 * resId + args.contentHashCode()
+    }
+
+    fun asString(context: Context): String = when (this) {
+        is Raw -> text
+        is Resource -> context.getString(resId, *args)
     }
 }
 

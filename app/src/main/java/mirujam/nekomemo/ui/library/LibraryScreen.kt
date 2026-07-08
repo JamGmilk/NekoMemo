@@ -83,7 +83,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
-import mirujam.nekomemo.navigation.BOTTOM_BAR_HEIGHT
+import mirujam.nekomemo.ui.theme.BottomBarHeight
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
@@ -130,7 +130,7 @@ fun LibraryScreen(
     var showSortFilterSheet by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
 
-    val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BOTTOM_BAR_HEIGHT
+    val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BottomBarHeight
 
     ExportLauncher(
         exportState = exportState,

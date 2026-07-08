@@ -83,7 +83,7 @@ import mirujam.nekomemo.R
 import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.validator.DataValidator
-import mirujam.nekomemo.navigation.BOTTOM_BAR_HEIGHT
+import mirujam.nekomemo.ui.theme.BottomBarHeight
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
@@ -118,7 +118,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val snackbarHostState = LocalSnackbarHostState.current
 
-    val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BOTTOM_BAR_HEIGHT
+    val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BottomBarHeight
 
     LaunchedEffect(snackbarTrigger) {
         if (snackbarTrigger > 0) {

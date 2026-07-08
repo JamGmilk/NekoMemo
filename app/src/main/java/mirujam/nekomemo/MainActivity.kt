@@ -34,7 +34,7 @@ import kotlinx.coroutines.delay
 import mirujam.nekomemo.data.local.MigrationErrorStore
 import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.data.preferences.ThemePreferenceRepository
-import mirujam.nekomemo.navigation.BOTTOM_BAR_HEIGHT
+import mirujam.nekomemo.ui.theme.BottomBarHeight
 import mirujam.nekomemo.navigation.BottomNavBar
 import mirujam.nekomemo.navigation.NekoMemoNavigation
 import mirujam.nekomemo.navigation.TOP_LEVEL_DESTINATIONS
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
                             SnackbarHost(
                                 hostState = snackbarHostState,
                                 modifier = if (appState.isTopLevelRoute) {
-                                    Modifier.padding(bottom = BOTTOM_BAR_HEIGHT)
+                                    Modifier.padding(bottom = BottomBarHeight)
                                 } else {
                                     Modifier
                                 }

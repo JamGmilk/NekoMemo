@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -29,6 +30,7 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val AUTO_NEXT_DELAY_MS = 300L
+private const val QUESTIONS_LOAD_TIMEOUT_MS = 10_000L
 
 data class TestUiState(
     val currentIndex: Int = 0,
@@ -92,7 +94,9 @@ class TestViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val models = rawQuestions.first { it.isNotEmpty() }
+                val models = withTimeout(QUESTIONS_LOAD_TIMEOUT_MS.milliseconds) {
+                    rawQuestions.first { it.isNotEmpty() }
+                }
                 val finalQuestions = if (shuffleQuestions) models.shuffled() else models
                 hasShuffledQuestions = shuffleQuestions
                 _uiState.update { it.copy(isLoading = false, questions = finalQuestions) }

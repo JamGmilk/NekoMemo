@@ -134,11 +134,13 @@ class BankDetailViewModel @Inject constructor(
         _showDeleteBankConfirmDialog.value = false
     }
 
-    fun confirmDeleteBank() {
+    fun confirmDeleteBank(onDeleted: () -> Unit) {
         val bank = currentBank.value ?: return
         viewModelScope.launch {
             try {
                 repository.deleteBank(bank)
+                Timber.d("Deleted bank ${bank.id}")
+                onDeleted()
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting bank")
             } finally {

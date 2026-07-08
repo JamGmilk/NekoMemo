@@ -13,15 +13,14 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -39,8 +38,6 @@ import mirujam.nekomemo.ui.jsonimport.JsonImportScreen
 import mirujam.nekomemo.ui.library.LibraryScreen
 import mirujam.nekomemo.ui.settings.SettingsScreen
 import mirujam.nekomemo.ui.test.TestScreen
-
-val BOTTOM_BAR_HEIGHT = 80.dp
 
 private val TOP_LEVEL_ROUTES = setOf(Route.Library.route, Route.Settings.route)
 
@@ -65,9 +62,12 @@ val TOP_LEVEL_DESTINATIONS: List<TopLevelDestination> = listOf(
 
 @Stable
 class NekoMemoAppState(
-    val navController: NavHostController
+    val navController: NavHostController,
+    private val selectedTabRouteState: MutableState<String> = mutableStateOf(Route.Library.route)
 ) {
-    private var selectedTabRoute by mutableStateOf(Route.Library.route)
+    private var selectedTabRoute: String
+        get() = selectedTabRouteState.value
+        set(value) { selectedTabRouteState.value = value }
 
     val currentTopLevelDestination: TopLevelDestination?
         @Composable get() {
@@ -106,8 +106,9 @@ class NekoMemoAppState(
 fun rememberNekoMemoAppState(
     navController: NavHostController = rememberNavController()
 ): NekoMemoAppState {
+    val selectedTabRoute = rememberSaveable { mutableStateOf(Route.Library.route) }
     return remember(navController) {
-        NekoMemoAppState(navController)
+        NekoMemoAppState(navController, selectedTabRoute)
     }
 }
 

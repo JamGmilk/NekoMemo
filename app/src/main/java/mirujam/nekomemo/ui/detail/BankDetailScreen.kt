@@ -192,8 +192,7 @@ fun BankDetailScreen(
             title = stringResource(R.string.library_delete_title),
             confirmText = stringResource(R.string.library_delete_confirm),
             onConfirm = {
-                viewModel.confirmDeleteBank()
-                onBack()
+                viewModel.confirmDeleteBank(onBack)
             },
             isDestructive = true,
             dismissText = stringResource(R.string.common_cancel),
@@ -460,12 +459,12 @@ private fun QuestionCard(
                     ) {
                         IconButton(
                             onClick = onEdit,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Edit,
                                 contentDescription = stringResource(R.string.common_edit),
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -477,12 +476,12 @@ private fun QuestionCard(
                     ) {
                         IconButton(
                             onClick = onDelete,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.DeleteOutline,
                                 contentDescription = stringResource(R.string.common_delete),
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
