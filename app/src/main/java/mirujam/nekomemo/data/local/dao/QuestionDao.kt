@@ -70,4 +70,16 @@ interface QuestionDao {
 
     @Query("SELECT questionBankId, COUNT(*) as count FROM questions GROUP BY questionBankId")
     fun getQuestionCountsByBank(): Flow<List<QuestionCountByBank>>
+
+    @Query("SELECT * FROM questions WHERE questionBankId = :bankId AND isFavorite = 1 ORDER BY id")
+    fun getFavoriteQuestionsForBank(bankId: Long): Flow<List<QuestionEntity>>
+
+    @Query("SELECT COUNT(*) FROM questions WHERE isFavorite = 1")
+    fun getTotalFavoriteCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM questions WHERE questionBankId = :bankId AND isFavorite = 1")
+    fun getFavoriteCountForBank(bankId: Long): Flow<Int>
+
+    @Query("UPDATE questions SET isFavorite = :isFavorite WHERE id = :questionId")
+    suspend fun setFavorite(questionId: Long, isFavorite: Boolean)
 }

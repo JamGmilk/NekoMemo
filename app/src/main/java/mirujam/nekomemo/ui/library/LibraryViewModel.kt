@@ -20,6 +20,8 @@ import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
+import mirujam.nekomemo.data.repository.QuestionStatsRepository
+import mirujam.nekomemo.domain.model.BankMasteryInfo
 import mirujam.nekomemo.domain.usecase.BankExportImportUseCase
 import mirujam.nekomemo.ui.model.UiText
 import mirujam.nekomemo.ui.shared.ExportDelegate
@@ -35,6 +37,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class LibraryViewModel @Inject constructor(
     private val repository: QuestionRepository,
     private val categoryRepository: CategoryRepository,
+    private val statsRepository: QuestionStatsRepository,
     private val bankExportImportUseCase: BankExportImportUseCase
 ) : ViewModel() {
 
@@ -94,6 +97,9 @@ class LibraryViewModel @Inject constructor(
 
     val questionCounts: StateFlow<Map<Long, Int>> = repository.getQuestionCountsByBank()
         .map { list -> list.associate { it.bankId to it.count } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    val bankMastery: StateFlow<Map<Long, BankMasteryInfo>> = statsRepository.getBankMastery()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _snackbarMessage = MutableStateFlow<UiText?>(null)
@@ -176,6 +182,20 @@ class LibraryViewModel @Inject constructor(
                 UiText.StringResource(R.string.library_duplicate_success)
             } else {
                 UiText.StringResource(R.string.library_duplicate_failed)
+            }
+        }
+    }
+
+    fun mergeBanks(sourceId: Long, targetId: Long, deleteSource: Boolean) {
+        viewModelScope.launch {
+            try {
+                val merged = repository.mergeBanks(sourceId, targetId, deleteSource)
+                _snackbarMessage.value = UiText.StringResource(
+                    if (merged) R.string.library_merge_success else R.string.library_merge_failed
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Error merging banks")
+                _snackbarMessage.value = UiText.StringResource(R.string.library_merge_failed)
             }
         }
     }

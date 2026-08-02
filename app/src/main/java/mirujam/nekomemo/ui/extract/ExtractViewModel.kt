@@ -67,6 +67,9 @@ class ExtractViewModel @Inject constructor(
         reorderCategories(dbCategories, importedName)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allBanks: StateFlow<List<QuestionBank>> = repository.getAllBanks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
             categoryRepository.ensureDefaultCategory()
@@ -96,7 +99,7 @@ class ExtractViewModel @Inject constructor(
         }
     }
 
-    fun saveQuestions(bankTitle: String, categoryId: Long) {
+    fun saveQuestions(bankTitle: String, categoryId: Long, targetBankId: Long? = null) {
         val bank = _questionBankFlow.value
         if (bank == null) {
             Timber.w("saveQuestions() called but questionBank is null!")
@@ -107,9 +110,6 @@ class ExtractViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                // 若分类尚不存在于数据库（导入分类），先自动创建
-                val resolvedCategoryId = resolveCategoryId(categoryId)
-
                 val questions = bank.questions.map { q ->
                     Question(
                         questionBankId = 0,
@@ -119,15 +119,29 @@ class ExtractViewModel @Inject constructor(
                         type = q.type
                     )
                 }
-                val bankId = repository.createBankWithQuestions(
-                    QuestionBank(
-                        title = bankTitle,
-                        categoryId = resolvedCategoryId
-                    ),
-                    questions
-                )
-                Timber.d("Successfully saved ${questions.size} questions, bankId=$bankId")
-                _saveResult.value = UiText.PluralStringResource(R.plurals.extract_save_success, questions.size, arrayOf(questions.size))
+                if (targetBankId != null) {
+                    repository.appendQuestionsToBank(targetBankId, questions)
+                    _saveResult.value = UiText.StringResource(
+                        R.string.extract_append_success,
+                        arrayOf(questions.size)
+                    )
+                } else {
+                    // 若分类尚不存在于数据库（导入分类），先自动创建
+                    val resolvedCategoryId = resolveCategoryId(categoryId)
+                    val bankId = repository.createBankWithQuestions(
+                        QuestionBank(
+                            title = bankTitle,
+                            categoryId = resolvedCategoryId
+                        ),
+                        questions
+                    )
+                    Timber.d("Successfully saved ${questions.size} questions, bankId=$bankId")
+                    _saveResult.value = UiText.PluralStringResource(
+                        R.plurals.extract_save_success,
+                        questions.size,
+                        arrayOf(questions.size)
+                    )
+                }
                 _isSaveSuccess.value = true
             } catch (e: Exception) {
                 Timber.e(e, "Error saving questions: ${e.message}")

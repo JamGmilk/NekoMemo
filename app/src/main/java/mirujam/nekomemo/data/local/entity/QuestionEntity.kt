@@ -25,5 +25,6 @@ data class QuestionEntity(
     val text: String,
     val options: String,
     val correctIndices: String,
-    val type: QuestionType
+    val type: QuestionType,
+    val isFavorite: Boolean = false
 )

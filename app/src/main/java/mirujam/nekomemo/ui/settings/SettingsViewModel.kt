@@ -21,6 +21,7 @@ import mirujam.nekomemo.data.preferences.ThemeMode
 import mirujam.nekomemo.data.preferences.ThemePreferenceRepository
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
+import mirujam.nekomemo.data.repository.QuestionStatsRepository
 import mirujam.nekomemo.ui.model.UiText
 import java.text.Collator
 import java.util.Locale
@@ -41,13 +42,23 @@ class SettingsViewModel @Inject constructor(
     private val repository: QuestionRepository,
     private val categoryRepository: CategoryRepository,
     private val themePreferenceRepository: ThemePreferenceRepository,
-    private val testPreferenceRepository: TestPreferenceRepository
+    private val testPreferenceRepository: TestPreferenceRepository,
+    private val statsRepository: QuestionStatsRepository
 ) : ViewModel() {
 
     val bankCount: StateFlow<Int> = repository.getBankCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val totalQuestionCount: StateFlow<Int> = repository.getTotalQuestionCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val totalAttemptCount: StateFlow<Int> = statsRepository.getTotalAttemptCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val totalWrongBookCount: StateFlow<Int> = statsRepository.getTotalWrongBookCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val totalFavoriteCount: StateFlow<Int> = repository.getTotalFavoriteCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val themeMode: StateFlow<ThemeMode> = themePreferenceRepository.themeMode

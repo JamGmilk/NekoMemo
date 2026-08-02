@@ -176,3 +176,76 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_questions_questionBankId` ON `questions` (`questionBankId`)")
     }
 }
+
+/**
+ * Migration from DB version 3 to 4.
+ *
+ * Changes:
+ * - questions.isFavorite (INTEGER, default 0)
+ * - question_stats table for mastery / wrong-book tracking
+ * - test_sessions table for resumable practice
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `questions_temp` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `questionBankId` INTEGER NOT NULL,
+                `text` TEXT NOT NULL,
+                `options` TEXT NOT NULL,
+                `correctIndices` TEXT NOT NULL,
+                `type` INTEGER NOT NULL,
+                `isFavorite` INTEGER NOT NULL,
+                FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            INSERT INTO `questions_temp` (`id`, `questionBankId`, `text`, `options`, `correctIndices`, `type`, `isFavorite`)
+            SELECT `id`, `questionBankId`, `text`, `options`, `correctIndices`, `type`, 0 FROM `questions`
+            """.trimIndent()
+        )
+
+        db.execSQL("DROP TABLE IF EXISTS `questions`")
+        db.execSQL("ALTER TABLE `questions_temp` RENAME TO `questions`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_questions_questionBankId` ON `questions` (`questionBankId`)")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `question_stats` (
+                `questionId` INTEGER NOT NULL,
+                `attemptCount` INTEGER NOT NULL,
+                `correctCount` INTEGER NOT NULL,
+                `wrongCount` INTEGER NOT NULL,
+                `lastPracticedAt` INTEGER NOT NULL,
+                `inWrongBook` INTEGER NOT NULL,
+                PRIMARY KEY(`questionId`),
+                FOREIGN KEY(`questionId`) REFERENCES `questions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `test_sessions` (
+                `bankId` INTEGER NOT NULL,
+                `questionIdsJson` TEXT NOT NULL,
+                `currentIndex` INTEGER NOT NULL,
+                `selectedAnswersJson` TEXT NOT NULL,
+                `textAnswersJson` TEXT NOT NULL,
+                `revealedJson` TEXT NOT NULL,
+                `shuffleQuestions` INTEGER NOT NULL,
+                `shuffleOptions` INTEGER NOT NULL,
+                `practiceMode` TEXT NOT NULL,
+                `typesFilter` TEXT NOT NULL,
+                `updatedAt` INTEGER NOT NULL,
+                PRIMARY KEY(`bankId`),
+                FOREIGN KEY(`bankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+    }
+}

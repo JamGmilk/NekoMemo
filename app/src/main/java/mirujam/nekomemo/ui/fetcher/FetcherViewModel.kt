@@ -10,10 +10,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import mirujam.nekomemo.R
+import mirujam.nekomemo.data.preferences.FetcherPreferenceRepository
 import mirujam.nekomemo.domain.usecase.HtmlParserUseCase
 import mirujam.nekomemo.ui.model.UiText
 import mirujam.nekomemo.domain.model.ExtractedQuestionBankSerializer
@@ -24,7 +26,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @HiltViewModel
 class FetcherViewModel @Inject constructor(
     private val sharedDataStore: SharedDataStore,
-    private val htmlParserUseCase: HtmlParserUseCase
+    private val htmlParserUseCase: HtmlParserUseCase,
+    private val fetcherPreferenceRepository: FetcherPreferenceRepository
 ) : ViewModel() {
 
     companion object {
@@ -38,6 +41,9 @@ class FetcherViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FetcherUiState())
 
     val uiState: StateFlow<FetcherUiState> = _uiState.asStateFlow()
+
+    val isGuideDismissed: StateFlow<Boolean> = fetcherPreferenceRepository.isGuideDismissed
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 
     private var parseJob: Job? = null
 
@@ -102,7 +108,7 @@ class FetcherViewModel @Inject constructor(
                 if (result.questions.isEmpty()) {
                     Timber.w("No questions found in parsed result!")
                     _uiState.value = _uiState.value.copy(
-                        parseResult = UiText.StringResource(R.string.fetcher_error_no_questions),
+                        parseResult = UiText.StringResource(R.string.fetcher_error_no_questions_hint),
                         isParsing = false
                     )
                 } else {
@@ -214,6 +220,12 @@ class FetcherViewModel @Inject constructor(
     
     fun clearResult() {
         _uiState.value = _uiState.value.copy(parseResult = null)
+    }
+
+    fun dismissGuide() {
+        viewModelScope.launch {
+            fetcherPreferenceRepository.dismissGuide()
+        }
     }
 
     fun releaseMemory() {

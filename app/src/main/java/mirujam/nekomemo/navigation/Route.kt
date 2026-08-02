@@ -1,6 +1,7 @@
 package mirujam.nekomemo.navigation
 
 import mirujam.nekomemo.R
+import mirujam.nekomemo.domain.model.PracticeMode
 
 sealed class Route(val route: String, val titleResId: Int) {
     data object Library : Route("library", R.string.nav_library)
@@ -11,7 +12,21 @@ sealed class Route(val route: String, val titleResId: Int) {
     data object Detail : Route("detail?bankId={bankId}", R.string.nav_detail) {
         fun createRoute(bankId: Long): String = "detail?bankId=$bankId"
     }
-    data object Test : Route("test?bankId={bankId}&questionCount={questionCount}&shuffleQuestions={shuffleQuestions}&shuffleOptions={shuffleOptions}", R.string.nav_test) {
-        fun createRoute(bankId: Long, questionCount: Int, shuffleQuestions: Boolean = false, shuffleOptions: Boolean = false): String = "test?bankId=$bankId&questionCount=$questionCount&shuffleQuestions=$shuffleQuestions&shuffleOptions=$shuffleOptions"
+    data object Test : Route(
+        "test?bankId={bankId}&questionCount={questionCount}&shuffleQuestions={shuffleQuestions}&shuffleOptions={shuffleOptions}&practiceMode={practiceMode}&types={types}&resume={resume}",
+        R.string.nav_test
+    ) {
+        fun createRoute(
+            bankId: Long,
+            questionCount: Int,
+            shuffleQuestions: Boolean = false,
+            shuffleOptions: Boolean = false,
+            practiceMode: PracticeMode = PracticeMode.ALL,
+            types: String = "",
+            resume: Boolean = false
+        ): String {
+            val encodedTypes = android.net.Uri.encode(types) ?: ""
+            return "test?bankId=$bankId&questionCount=$questionCount&shuffleQuestions=$shuffleQuestions&shuffleOptions=$shuffleOptions&practiceMode=${practiceMode.name}&types=$encodedTypes&resume=$resume"
+        }
     }
 }

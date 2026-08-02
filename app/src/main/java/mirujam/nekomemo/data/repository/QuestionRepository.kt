@@ -82,10 +82,62 @@ class QuestionRepository @Inject constructor(
             bankId
         }
 
-    suspend fun updateQuestion(id: Long, questionBankId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: QuestionType) {
+    suspend fun updateQuestion(
+        id: Long,
+        questionBankId: Long,
+        text: String,
+        options: List<String>,
+        correctIndices: List<Int>,
+        type: QuestionType,
+        isFavorite: Boolean = false
+    ) {
         questionDao.updateQuestion(
-            Question(id, questionBankId, text, options, correctIndices, type).toEntity()
+            Question(id, questionBankId, text, options, correctIndices, type, isFavorite).toEntity()
         )
+    }
+
+    suspend fun setFavorite(questionId: Long, isFavorite: Boolean) {
+        questionDao.setFavorite(questionId, isFavorite)
+    }
+
+    fun getFavoriteQuestionsForBank(bankId: Long): Flow<List<Question>> =
+        questionDao.getFavoriteQuestionsForBank(bankId).map { it.toDomainQuestionModels() }
+
+    fun getTotalFavoriteCount(): Flow<Int> =
+        questionDao.getTotalFavoriteCount()
+
+    fun getFavoriteCountForBank(bankId: Long): Flow<Int> =
+        questionDao.getFavoriteCountForBank(bankId)
+
+    suspend fun appendQuestionsToBank(bankId: Long, questions: List<Question>) {
+        if (questions.isEmpty()) return
+        database.withTransaction {
+            questionDao.insertAll(
+                questions.map { it.copy(id = 0, questionBankId = bankId).toEntity() }
+            )
+        }
+    }
+
+    /**
+     * Appends all questions from [sourceBankId] into [targetBankId].
+     * When [deleteSource] is true, deletes the source bank afterwards.
+     */
+    suspend fun mergeBanks(sourceBankId: Long, targetBankId: Long, deleteSource: Boolean): Boolean {
+        if (sourceBankId == targetBankId) return false
+        return database.withTransaction {
+            val source = questionBankDao.getBankById(sourceBankId) ?: return@withTransaction false
+            val target = questionBankDao.getBankById(targetBankId) ?: return@withTransaction false
+            val questions = questionDao.getQuestionsForBankSync(source.id)
+            if (questions.isNotEmpty()) {
+                questionDao.insertAll(
+                    questions.map { it.copy(id = 0, questionBankId = target.id) }
+                )
+            }
+            if (deleteSource) {
+                questionBankDao.deleteBank(source)
+            }
+            true
+        }
     }
 
     suspend fun deleteQuestion(question: Question) =

@@ -12,11 +12,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import mirujam.nekomemo.data.local.MIGRATION_1_2
 import mirujam.nekomemo.data.local.MIGRATION_2_3
+import mirujam.nekomemo.data.local.MIGRATION_3_4
 import mirujam.nekomemo.data.local.MigrationErrorStore
 import mirujam.nekomemo.data.local.NekoMemoDatabase
 import mirujam.nekomemo.data.local.dao.CategoryDao
 import mirujam.nekomemo.data.local.dao.QuestionBankDao
 import mirujam.nekomemo.data.local.dao.QuestionDao
+import mirujam.nekomemo.data.local.dao.QuestionStatsDao
+import mirujam.nekomemo.data.local.dao.TestSessionDao
 import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -36,7 +39,7 @@ object DatabaseModule {
             NekoMemoDatabase::class.java,
             "nekomemo_database"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
     }
 
@@ -51,6 +54,14 @@ object DatabaseModule {
     @Provides
     fun provideCategoryDao(database: NekoMemoDatabase): CategoryDao =
         database.categoryDao()
+
+    @Provides
+    fun provideQuestionStatsDao(database: NekoMemoDatabase): QuestionStatsDao =
+        database.questionStatsDao()
+
+    @Provides
+    fun provideTestSessionDao(database: NekoMemoDatabase): TestSessionDao =
+        database.testSessionDao()
 
     @Provides
     @Singleton

@@ -46,6 +46,7 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -83,6 +84,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.domain.model.QuestionBank
+import mirujam.nekomemo.domain.model.BankMasteryInfo
 import mirujam.nekomemo.ui.theme.BottomBarHeight
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
@@ -115,6 +117,7 @@ fun LibraryScreen(
     val exportState by viewModel.exportState.collectAsStateWithLifecycle()
     val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
     val questionCounts by viewModel.questionCounts.collectAsStateWithLifecycle()
+    val bankMastery by viewModel.bankMastery.collectAsStateWithLifecycle()
     val showDeleteConfirmDialog by viewModel.showDeleteConfirmDialog.collectAsStateWithLifecycle()
     val showEditBankDialog by viewModel.showEditBankDialog.collectAsStateWithLifecycle()
     val editingBank by viewModel.editingBank.collectAsStateWithLifecycle()
@@ -129,6 +132,9 @@ fun LibraryScreen(
 
     var showSortFilterSheet by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
+    var mergeSourceBank by remember { mutableStateOf<QuestionBank?>(null) }
+    var mergeTargetBankId by remember { mutableStateOf<Long?>(null) }
+    var deleteMergeSource by remember { mutableStateOf(false) }
 
     val bottomBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + BottomBarHeight
 
@@ -173,6 +179,61 @@ fun LibraryScreen(
                 onConfirm = { title, categoryId -> viewModel.updateEditedBank(title, categoryId) }
             )
         }
+    }
+
+    mergeSourceBank?.let { source ->
+        DialogWithIcon(
+            onDismiss = {
+                mergeSourceBank = null
+                mergeTargetBankId = null
+                deleteMergeSource = false
+            },
+            icon = Icons.Outlined.ContentCopy,
+            title = stringResource(R.string.library_merge_title),
+            confirmText = stringResource(R.string.library_merge),
+            confirmEnabled = mergeTargetBankId != null,
+            onConfirm = {
+                mergeTargetBankId?.let { targetId ->
+                    viewModel.mergeBanks(source.id, targetId, deleteMergeSource)
+                }
+                mergeSourceBank = null
+                mergeTargetBankId = null
+                deleteMergeSource = false
+            },
+            dismissText = stringResource(R.string.common_cancel),
+            content = {
+                Text(stringResource(R.string.library_merge_message, source.title))
+                Spacer(modifier = Modifier.height(12.dp))
+                banks.filter { it.id != source.id }.forEach { bank ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { mergeTargetBankId = bank.id }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = mergeTargetBankId == bank.id,
+                            onCheckedChange = { mergeTargetBankId = bank.id }
+                        )
+                        Text(bank.title)
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { deleteMergeSource = !deleteMergeSource }
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = deleteMergeSource,
+                        onCheckedChange = { deleteMergeSource = it }
+                    )
+                    Text(stringResource(R.string.library_merge_delete_source))
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -313,11 +374,17 @@ fun LibraryScreen(
                         QuestionBankCard(
                             bank = bank,
                             questionCount = questionCounts[bank.id] ?: 0,
+                            mastery = bankMastery[bank.id],
                             category = categoryMap[bank.categoryId],
                             onClick = { onBankClick(bank.id) },
                             onExport = { viewModel.prepareExport(bank) },
                             onEdit = { viewModel.showEditBankDialog(bank) },
                             onDuplicate = { viewModel.duplicateBank(bank) },
+                            onMerge = {
+                                mergeSourceBank = bank
+                                mergeTargetBankId = null
+                                deleteMergeSource = false
+                            },
                             onDelete = { viewModel.deleteBank(bank) },
                             modifier = Modifier.animateItem()
                         )
@@ -345,11 +412,13 @@ fun LibraryScreen(
 private fun QuestionBankCard(
     bank: QuestionBank,
     questionCount: Int,
+    mastery: BankMasteryInfo?,
     category: Category?,
     onClick: () -> Unit,
     onExport: () -> Unit,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
+    onMerge: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -410,6 +479,23 @@ private fun QuestionBankCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = mastery?.masteryPercent?.let {
+                            stringResource(R.string.library_mastery, it)
+                        } ?: stringResource(R.string.library_mastery_none),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    mastery?.takeIf { it.wrongBookCount > 0 }?.let {
+                        Text(
+                            text = stringResource(R.string.library_wrong_badge, it.wrongBookCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
 
             Box {
@@ -451,6 +537,13 @@ private fun QuestionBankCard(
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.library_duplicate)) },
                         onClick = { menuExpanded = false; onDuplicate() },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(18.dp))
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.library_merge)) },
+                        onClick = { menuExpanded = false; onMerge() },
                         leadingIcon = {
                             Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(18.dp))
                         }
