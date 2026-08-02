@@ -19,9 +19,11 @@ import kotlinx.coroutines.launch
 import mirujam.nekomemo.domain.model.Category
 import mirujam.nekomemo.data.repository.CategoryRepository
 import mirujam.nekomemo.data.repository.QuestionRepository
+import mirujam.nekomemo.data.repository.QuestionStatsRepository
 import mirujam.nekomemo.domain.model.Question
 import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.domain.model.QuestionType
+import mirujam.nekomemo.domain.model.TestSession
 import mirujam.nekomemo.domain.usecase.BankExportImportUseCase
 import mirujam.nekomemo.ui.model.QuestionUiModel
 import mirujam.nekomemo.ui.shared.ExportDelegate
@@ -34,6 +36,7 @@ class BankDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: QuestionRepository,
     private val categoryRepository: CategoryRepository,
+    private val statsRepository: QuestionStatsRepository,
     bankExportImportUseCase: BankExportImportUseCase
 ) : ViewModel() {
 
@@ -84,6 +87,15 @@ class BankDetailViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val wrongBookCount: StateFlow<Int> = statsRepository.getWrongBookCountForBank(bankId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val favoriteCount: StateFlow<Int> = repository.getFavoriteCountForBank(bankId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val resumableSession: StateFlow<TestSession?> = statsRepository.getSessionFlow(bankId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     private var pendingDeleteQuestion: Question? = null
 
     fun deleteQuestion(questionId: Long) {
@@ -101,7 +113,8 @@ class BankDetailViewModel @Inject constructor(
             text = question.text,
             options = question.options,
             correctIndices = question.correctIndices,
-            type = question.type
+            type = question.type,
+            isFavorite = question.isFavorite
         )
         _showDeleteConfirmDialog.value = true
     }
@@ -211,11 +224,26 @@ class BankDetailViewModel @Inject constructor(
     fun updateQuestion(questionId: Long, text: String, options: List<String>, correctIndices: List<Int>, type: QuestionType) {
         viewModelScope.launch {
             try {
-                repository.updateQuestion(questionId, bankId, text, options, correctIndices, type)
+                val existing = repository.getQuestionById(questionId)
+                repository.updateQuestion(
+                    questionId,
+                    bankId,
+                    text,
+                    options,
+                    correctIndices,
+                    type,
+                    isFavorite = existing?.isFavorite ?: false
+                )
                 _editingQuestion.value = null
             } catch (e: Exception) {
                 Timber.e(e, "Error updating question")
             }
+        }
+    }
+
+    fun toggleFavorite(questionId: Long, currentlyFavorite: Boolean) {
+        viewModelScope.launch {
+            repository.setFavorite(questionId, !currentlyFavorite)
         }
     }
 

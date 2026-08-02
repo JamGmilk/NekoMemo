@@ -108,6 +108,9 @@ fun SettingsScreen(
 
     val bankCount by viewModel.bankCount.collectAsStateWithLifecycle()
     val totalQuestionCount by viewModel.totalQuestionCount.collectAsStateWithLifecycle()
+    val totalAttemptCount by viewModel.totalAttemptCount.collectAsStateWithLifecycle()
+    val totalWrongBookCount by viewModel.totalWrongBookCount.collectAsStateWithLifecycle()
+    val totalFavoriteCount by viewModel.totalFavoriteCount.collectAsStateWithLifecycle()
     val currentTheme by viewModel.themeMode.collectAsStateWithLifecycle()
     val directAnswer by viewModel.directAnswer.collectAsStateWithLifecycle()
     val autoNextOnCorrect by viewModel.autoNextOnCorrect.collectAsStateWithLifecycle()
@@ -289,7 +292,10 @@ fun SettingsScreen(
 
             StatisticsCard(
                 bankCount = bankCount,
-                totalQuestionCount = totalQuestionCount
+                totalQuestionCount = totalQuestionCount,
+                totalAttemptCount = totalAttemptCount,
+                totalWrongBookCount = totalWrongBookCount,
+                totalFavoriteCount = totalFavoriteCount
             )
 
             val onAddClick = remember { { showAddCategoryDialog = true } }
@@ -560,6 +566,9 @@ private fun TestSettingsCard(
 private fun StatisticsCard(
     bankCount: Int,
     totalQuestionCount: Int,
+    totalAttemptCount: Int,
+    totalWrongBookCount: Int,
+    totalFavoriteCount: Int,
     modifier: Modifier = Modifier
 ) {
     SettingsCard(
@@ -567,23 +576,22 @@ private fun StatisticsCard(
         icon = Icons.Outlined.QueryStats,
         modifier = modifier
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatItem(
-                value = bankCount.toString(),
-                label = stringResource(R.string.settings_banks),
-                modifier = Modifier.weight(1f)
-            )
-
-            StatItem(
-                value = totalQuestionCount.toString(),
-                label = stringResource(R.string.settings_questions),
-                modifier = Modifier.weight(1f)
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatItem(bankCount.toString(), stringResource(R.string.settings_banks), Modifier.weight(1f))
+                StatItem(totalQuestionCount.toString(), stringResource(R.string.settings_questions), Modifier.weight(1f))
+                StatItem(totalAttemptCount.toString(), stringResource(R.string.settings_attempts), Modifier.weight(1f))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatItem(totalWrongBookCount.toString(), stringResource(R.string.settings_wrong_book), Modifier.weight(1f))
+                StatItem(totalFavoriteCount.toString(), stringResource(R.string.settings_favorites), Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }

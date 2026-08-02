@@ -1,6 +1,7 @@
 package mirujam.nekomemo.ui.extract
 
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -53,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import mirujam.nekomemo.R
 import mirujam.nekomemo.domain.model.ExtractedQuestion
+import mirujam.nekomemo.domain.model.Category
+import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.navigation.Route
 import mirujam.nekomemo.ui.component.AppTopBar
@@ -74,6 +78,7 @@ fun ExtractScreen(
     val saveResult by viewModel.saveResult.collectAsStateWithLifecycle()
     val isSaveSuccess by viewModel.isSaveSuccess.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val allBanks by viewModel.allBanks.collectAsStateWithLifecycle()
     val suggestedCategoryId by viewModel.suggestedCategoryId.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -101,6 +106,9 @@ fun ExtractScreen(
     var bankTitle by rememberSaveable { mutableStateOf("") }
     var selectedCategoryId by rememberSaveable { mutableStateOf(0L) }
     var categoryExpanded by rememberSaveable { mutableStateOf(false) }
+    var appendMode by rememberSaveable { mutableStateOf(false) }
+    var selectedTargetBankId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var targetBankExpanded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(questionBank?.name) {
         if (questionBank != null && bankTitle.isBlank()) {
@@ -139,6 +147,9 @@ fun ExtractScreen(
     val selectedCategory = remember(selectedCategoryId, categories) {
         categories.find { it.id == selectedCategoryId }
     }
+    val selectedTargetBank = remember(selectedTargetBankId, allBanks) {
+        allBanks.find { it.id == selectedTargetBankId }
+    }
 
     if (showSaveDialog) {
         DialogWithIcon(
@@ -147,76 +158,73 @@ fun ExtractScreen(
             title = stringResource(R.string.extract_save_dialog_title),
             confirmText = stringResource(R.string.common_save),
             onConfirm = {
-                viewModel.saveQuestions(bankTitle, selectedCategoryId)
+                viewModel.saveQuestions(
+                    bankTitle = bankTitle,
+                    categoryId = selectedCategoryId,
+                    targetBankId = selectedTargetBankId.takeIf { appendMode }
+                )
                 showSaveDialog = false
             },
-            confirmEnabled = bankTitle.isNotBlank() && !isSaving,
+            confirmEnabled = (!appendMode && bankTitle.isNotBlank() || appendMode && selectedTargetBankId != null) && !isSaving,
             isLoading = isSaving,
             dismissText = stringResource(R.string.common_cancel),
             dismissEnabled = !isSaving,
             content = {
                 Column {
-                    OutlinedTextField(
-                        value = bankTitle,
-                        onValueChange = { bankTitle = it },
-                        label = { Text(stringResource(R.string.extract_bank_title_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = AppShapes.extraSmall,
-                        textStyle = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    ExposedDropdownMenuBox(
-                        expanded = categoryExpanded,
-                        onExpandedChange = { categoryExpanded = !categoryExpanded }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { appendMode = false }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val interactionSource = remember { MutableInteractionSource() }
-                        val displayName = selectedCategory?.displayName() ?: ""
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .focusable(interactionSource = interactionSource)
-                        ) {
-                            OutlinedTextFieldDefaults.DecorationBox(
-                                value = displayName,
-                                innerTextField = {
-                                    Text(
-                                        text = displayName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                },
-                                enabled = true,
-                                singleLine = true,
-                                visualTransformation = VisualTransformation.None,
-                                interactionSource = interactionSource,
-                                label = { Text(stringResource(R.string.extract_category_label)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
-                                container = {
-                                    OutlinedTextFieldDefaults.Container(
-                                        enabled = true,
-                                        isError = false,
-                                        interactionSource = interactionSource,
-                                        shape = AppShapes.extraSmall
-                                    )
-                                }
-                            )
-                        }
-                        ExposedDropdownMenu(
-                            expanded = categoryExpanded,
-                            onDismissRequest = { categoryExpanded = false }
-                        ) {
-                            categories.forEach { category ->
-                                DropdownMenuItem(
-                                    text = { Text(category.displayName()) },
-                                    onClick = {
-                                        selectedCategoryId = category.id
-                                        categoryExpanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
+                        Checkbox(checked = !appendMode, onCheckedChange = { appendMode = false })
+                        Text(stringResource(R.string.extract_save_mode_new))
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { appendMode = true }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(checked = appendMode, onCheckedChange = { appendMode = true })
+                        Text(stringResource(R.string.extract_save_mode_append))
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    if (appendMode) {
+                        BankSelector(
+                            label = stringResource(R.string.extract_save_select_bank),
+                            selectedName = selectedTargetBank?.title.orEmpty(),
+                            expanded = targetBankExpanded,
+                            onExpandedChange = { targetBankExpanded = !targetBankExpanded },
+                            banks = allBanks,
+                            onSelect = {
+                                selectedTargetBankId = it.id
+                                targetBankExpanded = false
                             }
-                        }
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value = bankTitle,
+                            onValueChange = { bankTitle = it },
+                            label = { Text(stringResource(R.string.extract_bank_title_label)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = AppShapes.extraSmall,
+                            textStyle = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        CategorySelector(
+                            label = stringResource(R.string.extract_category_label),
+                            selectedName = selectedCategory?.displayName().orEmpty(),
+                            expanded = categoryExpanded,
+                            onExpandedChange = { categoryExpanded = !categoryExpanded },
+                            categories = categories,
+                            onSelect = {
+                                selectedCategoryId = it.id
+                                categoryExpanded = false
+                            }
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -427,6 +435,70 @@ private fun ExtractedQuestionCard(
                     text = stringResource(R.string.extract_correct_answer, question.correctAnswer),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategorySelector(
+    label: String,
+    selectedName: String,
+    expanded: Boolean,
+    onExpandedChange: () -> Unit,
+    categories: List<Category>,
+    onSelect: (Category) -> Unit
+) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { onExpandedChange() }) {
+        OutlinedTextField(
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            shape = AppShapes.extraSmall
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = onExpandedChange) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category.displayName()) },
+                    onClick = { onSelect(category) },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BankSelector(
+    label: String,
+    selectedName: String,
+    expanded: Boolean,
+    onExpandedChange: () -> Unit,
+    banks: List<QuestionBank>,
+    onSelect: (QuestionBank) -> Unit
+) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { onExpandedChange() }) {
+        OutlinedTextField(
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            shape = AppShapes.extraSmall
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = onExpandedChange) {
+            banks.forEach { bank ->
+                DropdownMenuItem(
+                    text = { Text(bank.title) },
+                    onClick = { onSelect(bank) },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
             }
         }

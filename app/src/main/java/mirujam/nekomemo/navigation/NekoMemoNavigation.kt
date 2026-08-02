@@ -251,8 +251,18 @@ fun NekoMemoNavigation(
             )
         ) {
             BankDetailScreen(
-                onStartTest = { id, count, shuffleQuestions, shuffleOptions ->
-                    navController.navigate(Route.Test.createRoute(id, count, shuffleQuestions, shuffleOptions)) {
+                onStartTest = { id, count, shuffleQuestions, shuffleOptions, practiceMode, types, resume ->
+                    navController.navigate(
+                        Route.Test.createRoute(
+                            bankId = id,
+                            questionCount = count,
+                            shuffleQuestions = shuffleQuestions,
+                            shuffleOptions = shuffleOptions,
+                            practiceMode = practiceMode,
+                            types = types,
+                            resume = resume
+                        )
+                    ) {
                         launchSingleTop = true
                     }
                 },
@@ -266,7 +276,10 @@ fun NekoMemoNavigation(
                 navArgument("bankId") { type = NavType.LongType },
                 navArgument("questionCount") { type = NavType.IntType },
                 navArgument("shuffleQuestions") { type = NavType.BoolType; defaultValue = false },
-                navArgument("shuffleOptions") { type = NavType.BoolType; defaultValue = false }
+                navArgument("shuffleOptions") { type = NavType.BoolType; defaultValue = false },
+                navArgument("practiceMode") { type = NavType.StringType; defaultValue = "ALL" },
+                navArgument("types") { type = NavType.StringType; defaultValue = "" },
+                navArgument("resume") { type = NavType.BoolType; defaultValue = false }
             )
         ) {
             TestScreen(

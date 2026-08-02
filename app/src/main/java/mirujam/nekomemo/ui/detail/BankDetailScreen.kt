@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Cancel
@@ -29,7 +31,10 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Quiz
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,9 +42,11 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.RadioButton
@@ -75,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mirujam.nekomemo.R
+import mirujam.nekomemo.domain.model.PracticeMode
 import mirujam.nekomemo.domain.model.QuestionType
 import mirujam.nekomemo.ui.component.AppTopBar
 import mirujam.nekomemo.ui.component.DialogWithIcon
@@ -83,6 +91,7 @@ import mirujam.nekomemo.ui.component.ExportLauncher
 import mirujam.nekomemo.ui.component.LocalSnackbarHostState
 import mirujam.nekomemo.ui.component.displayName
 import mirujam.nekomemo.ui.model.QuestionUiModel
+import mirujam.nekomemo.ui.test.TestQuestionSelector
 import mirujam.nekomemo.ui.theme.AppShapes
 import mirujam.nekomemo.ui.theme.ButtonShapes
 import timber.log.Timber
@@ -91,7 +100,7 @@ import timber.log.Timber
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BankDetailScreen(
-    onStartTest: (Long, Int, Boolean, Boolean) -> Unit,
+    onStartTest: (Long, Int, Boolean, Boolean, PracticeMode, String, Boolean) -> Unit,
     onBack: () -> Unit,
     viewModel: BankDetailViewModel = hiltViewModel()
 ) {
@@ -106,6 +115,9 @@ fun BankDetailScreen(
     val questions by viewModel.filteredQuestions.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val wrongBookCount by viewModel.wrongBookCount.collectAsStateWithLifecycle()
+    val favoriteCount by viewModel.favoriteCount.collectAsStateWithLifecycle()
+    val resumableSession by viewModel.resumableSession.collectAsStateWithLifecycle()
     var showTestConfigDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
 
@@ -205,11 +217,25 @@ fun BankDetailScreen(
     if (showTestConfigDialog && questionCount > 0) {
         TestConfigDialog(
             totalQuestions = questionCount,
+            wrongBookCount = wrongBookCount,
+            favoriteCount = favoriteCount,
             onDismiss = { showTestConfigDialog = false },
-            onStart = { count, shuffleQuestions, shuffleOptions ->
+            onStart = { count, shuffleQuestions, shuffleOptions, practiceMode, types ->
                 showTestConfigDialog = false
-                Timber.d("Starting Test - bankId: ${viewModel.bankIdValue}, questionCount: $count, shuffleQuestions: $shuffleQuestions, shuffleOptions: $shuffleOptions, totalQuestionsAvailable: $questionCount")
-                onStartTest(viewModel.bankIdValue, count, shuffleQuestions, shuffleOptions)
+                Timber.d(
+                    "Starting Test - bankId: ${viewModel.bankIdValue}, questionCount: $count, " +
+                        "shuffleQuestions: $shuffleQuestions, shuffleOptions: $shuffleOptions, " +
+                        "practiceMode: $practiceMode, types: $types"
+                )
+                onStartTest(
+                    viewModel.bankIdValue,
+                    count,
+                    shuffleQuestions,
+                    shuffleOptions,
+                    practiceMode,
+                    types,
+                    false
+                )
             }
         )
     }
@@ -296,20 +322,50 @@ fun BankDetailScreen(
         },
         bottomBar = {
             if (questionCount > 0) {
-                Button(
-                    onClick = { showTestConfigDialog = true },
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    shape = ButtonShapes
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Quiz,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.detail_start_test))
+                    if (resumableSession != null) {
+                        OutlinedButton(
+                            onClick = {
+                                onStartTest(
+                                    viewModel.bankIdValue,
+                                    0,
+                                    false,
+                                    false,
+                                    PracticeMode.ALL,
+                                    "",
+                                    true
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = ButtonShapes
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.detail_continue_test))
+                        }
+                    }
+                    Button(
+                        onClick = { showTestConfigDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = ButtonShapes
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Quiz,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.detail_start_test))
+                    }
                 }
             }
         }
@@ -386,6 +442,18 @@ fun BankDetailScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            if (wrongBookCount > 0 || favoriteCount > 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.detail_stats_summary,
+                                        wrongBookCount,
+                                        favoriteCount
+                                    ),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
@@ -406,6 +474,9 @@ fun BankDetailScreen(
                         question = question,
                         onEdit = { viewModel.showEditQuestionDialog(question.id) },
                         onDelete = { viewModel.deleteQuestion(question) },
+                        onToggleFavorite = {
+                            viewModel.toggleFavorite(question.id, question.isFavorite)
+                        },
                         modifier = Modifier.animateItem()
                     )
                 }
@@ -422,6 +493,7 @@ private fun QuestionCard(
     question: QuestionUiModel,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -452,6 +524,27 @@ private fun QuestionCard(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Row {
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.detail_favorite)) } },
+                        state = rememberTooltipState()
+                    ) {
+                        IconButton(
+                            onClick = onToggleFavorite,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (question.isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(R.string.detail_favorite),
+                                modifier = Modifier.size(20.dp),
+                                tint = if (question.isFavorite) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.common_edit)) } },
@@ -542,25 +635,136 @@ enum class TestSelectionMode {
     ALL, CUSTOM
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TestConfigDialog(
     totalQuestions: Int,
+    wrongBookCount: Int,
+    favoriteCount: Int,
     onDismiss: () -> Unit,
-    onStart: (count: Int, shuffleQuestions: Boolean, shuffleOptions: Boolean) -> Unit
+    onStart: (count: Int, shuffleQuestions: Boolean, shuffleOptions: Boolean, practiceMode: PracticeMode, types: String) -> Unit
 ) {
     var selectedMode by remember { mutableStateOf(TestSelectionMode.ALL) }
-    var selectedCount by remember { mutableIntStateOf(totalQuestions) }
+    var practiceMode by remember { mutableStateOf(PracticeMode.ALL) }
+    var selectedTypes by remember { mutableStateOf(QuestionType.entries.toSet()) }
+    val availableCount = remember(practiceMode, wrongBookCount, favoriteCount, totalQuestions) {
+        when (practiceMode) {
+            PracticeMode.ALL -> totalQuestions
+            PracticeMode.WRONG -> wrongBookCount
+            PracticeMode.FAVORITE -> favoriteCount
+        }
+    }
+    var selectedCount by remember(availableCount) { mutableIntStateOf(availableCount.coerceAtLeast(0)) }
     var shuffleQuestions by remember { mutableStateOf(false) }
     var shuffleOptions by remember { mutableStateOf(false) }
+
+    val canStart = availableCount > 0 && selectedTypes.isNotEmpty() && selectedCount > 0
 
     DialogWithIcon(
         onDismiss = onDismiss,
         icon = Icons.Outlined.Quiz,
         title = stringResource(R.string.detail_test_config_title),
         confirmText = stringResource(R.string.detail_start_test),
-        onConfirm = { onStart(selectedCount, shuffleQuestions, shuffleOptions) },
+        onConfirm = {
+            if (canStart) {
+                onStart(
+                    selectedCount,
+                    shuffleQuestions,
+                    shuffleOptions,
+                    practiceMode,
+                    TestQuestionSelector.encodeTypeCodes(selectedTypes)
+                )
+            }
+        },
+        confirmEnabled = canStart,
         dismissText = stringResource(R.string.common_cancel),
         content = {
+            Text(
+                text = stringResource(R.string.detail_practice_mode),
+                style = MaterialTheme.typography.labelLarge
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                PracticeMode.entries.forEach { mode ->
+                    val enabled = when (mode) {
+                        PracticeMode.ALL -> totalQuestions > 0
+                        PracticeMode.WRONG -> wrongBookCount > 0
+                        PracticeMode.FAVORITE -> favoriteCount > 0
+                    }
+                    val label = when (mode) {
+                        PracticeMode.ALL -> stringResource(R.string.detail_practice_all, totalQuestions)
+                        PracticeMode.WRONG -> stringResource(R.string.detail_practice_wrong, wrongBookCount)
+                        PracticeMode.FAVORITE -> stringResource(R.string.detail_practice_favorite, favoriteCount)
+                    }
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(AppShapes.small)
+                            .selectable(
+                                selected = practiceMode == mode,
+                                enabled = enabled,
+                                onClick = {
+                                    practiceMode = mode
+                                    selectedMode = TestSelectionMode.ALL
+                                    selectedCount = when (mode) {
+                                        PracticeMode.ALL -> totalQuestions
+                                        PracticeMode.WRONG -> wrongBookCount
+                                        PracticeMode.FAVORITE -> favoriteCount
+                                    }
+                                },
+                                role = Role.RadioButton
+                            )
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = practiceMode == mode,
+                            onClick = null,
+                            enabled = enabled
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = label,
+                            color = if (enabled) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.detail_question_types),
+                style = MaterialTheme.typography.labelLarge
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                QuestionType.entries.forEach { type ->
+                    val selected = type in selectedTypes
+                    FilterChip(
+                        selected = selected,
+                        onClick = {
+                            selectedTypes = if (selected) {
+                                if (selectedTypes.size == 1) selectedTypes else selectedTypes - type
+                            } else {
+                                selectedTypes + type
+                            }
+                        },
+                        label = { Text(stringResource(type.displayNameRes())) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
             Column(
                 modifier = Modifier.selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -572,25 +776,27 @@ private fun TestConfigDialog(
                             .clip(AppShapes.small)
                             .selectable(
                                 selected = (mode == selectedMode),
+                                enabled = availableCount > 0,
                                 onClick = {
                                     selectedMode = mode
                                     if (mode == TestSelectionMode.ALL) {
-                                        selectedCount = totalQuestions
+                                        selectedCount = availableCount
                                     }
                                 },
-                                role = Role.RadioButton,
+                                role = Role.RadioButton
                             )
                             .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = (mode == selectedMode),
                             onClick = null,
+                            enabled = availableCount > 0
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = when (mode) {
-                                TestSelectionMode.ALL -> stringResource(R.string.detail_all_questions, totalQuestions)
+                                TestSelectionMode.ALL -> stringResource(R.string.detail_all_questions, availableCount)
                                 TestSelectionMode.CUSTOM -> stringResource(R.string.detail_custom_count)
                             }
                         )
@@ -598,19 +804,17 @@ private fun TestConfigDialog(
                 }
             }
 
-            if (selectedMode == TestSelectionMode.CUSTOM && totalQuestions > 1) {
+            if (selectedMode == TestSelectionMode.CUSTOM && availableCount > 1) {
                 Spacer(modifier = Modifier.height(12.dp))
-
                 Slider(
-                    value = selectedCount.toFloat(),
+                    value = selectedCount.coerceIn(1, availableCount).toFloat(),
                     onValueChange = { selectedCount = it.toInt() },
-                    valueRange = 1f..totalQuestions.toFloat(),
-                    steps = (totalQuestions - 2).coerceAtLeast(0),
+                    valueRange = 1f..availableCount.toFloat(),
+                    steps = (availableCount - 2).coerceAtLeast(0),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 )
-
                 Text(
                     text = pluralStringResource(R.plurals.detail_selected_questions_count, selectedCount, selectedCount),
                     style = MaterialTheme.typography.bodyMedium,
@@ -621,18 +825,25 @@ private fun TestConfigDialog(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 CheckboxRow(
                     text = stringResource(R.string.detail_shuffle_questions),
                     checked = shuffleQuestions,
                     onCheckedChange = { shuffleQuestions = it }
                 )
-
                 CheckboxRow(
                     text = stringResource(R.string.detail_shuffle_options),
                     checked = shuffleOptions,
                     onCheckedChange = { shuffleOptions = it }
+                )
+            }
+
+            if (!canStart) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.detail_no_matching_questions),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -655,7 +866,7 @@ private fun CheckboxRow(
                 role = Role.Checkbox
             )
             .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
             checked = checked,

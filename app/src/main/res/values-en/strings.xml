@@ -40,6 +40,16 @@
         <item quantity="other">%1$d questions</item>
     </plurals>
     <string name="library_more_options">More options</string>
+    <string name="library_merge">Merge into…</string>
+    <string name="library_merge_title">Merge banks</string>
+    <string name="library_merge_message">Append questions from “%1$s” into the target bank.</string>
+    <string name="library_merge_delete_source">Delete source bank after merge</string>
+    <string name="library_merge_success">Banks merged</string>
+    <string name="library_merge_failed">Merge failed</string>
+    <string name="library_mastery">Mastery %1$d%%</string>
+    <string name="library_mastery_none">Not practiced yet</string>
+    <string name="library_wrong_badge">Wrong %1$d</string>
+    <string name="library_practice_wrong">Practice wrong</string>
     <string name="library_filter_all">All</string>
     <string name="library_filter_by_category">Filter by category</string>
     <string name="library_sort_and_filter">Sort &amp; Filter</string>
@@ -55,6 +65,12 @@
     <string name="fetcher_zoom_out">Zoom out</string>
     <string name="fetcher_zoom_in">Zoom in</string>
     <string name="fetcher_extract">Extract</string>
+    <string name="fetcher_guide_title">How to extract</string>
+    <string name="fetcher_guide_step1">1. Sign in to Chaoxing</string>
+    <string name="fetcher_guide_step2">2. Open an assignment/exam detail page</string>
+    <string name="fetcher_guide_step3">3. Tap the Extract button</string>
+    <string name="fetcher_guide_dismiss">Got it</string>
+    <string name="fetcher_error_no_questions_hint">No questions found. Make sure you are on an assignment or exam detail page.</string>
     <string name="fetcher_save_failed">Failed to save extracted data</string>
     <string name="fetcher_error_empty_html">Error: Empty HTML content</string>
     <string name="fetcher_error_page_too_large">Error: Page too large (%1$.1fMB). Try a smaller page.</string>
@@ -84,6 +100,10 @@
     </plurals>
     <string name="extract_save_to_library">Save to Library</string>
     <string name="extract_save_dialog_title">Save Question Bank</string>
+    <string name="extract_save_mode_new">Create new bank</string>
+    <string name="extract_save_mode_append">Append to existing bank</string>
+    <string name="extract_save_select_bank">Select target bank</string>
+    <string name="extract_append_success">Appended %1$d questions</string>
     <plurals name="extract_save_success">
         <item quantity="one">Saved %1$d question!</item>
         <item quantity="other">Saved %1$d questions!</item>
@@ -103,6 +123,12 @@
     <string name="json_import_text_placeholder">Paste or type JSON content here…</string>
     <string name="json_import_paste">Paste</string>
     <string name="json_import_select_file">Select File</string>
+    <string name="json_import_select_files">Select multiple files</string>
+    <string name="json_import_batch_title">Batch import</string>
+    <string name="json_import_batch_summary">Parsed %1$d files, %2$d failed</string>
+    <string name="json_import_batch_save_all">Save all as new banks</string>
+    <string name="json_import_batch_open_first">Preview first</string>
+    <string name="json_import_batch_saved">Saved %1$d banks</string>
     <string name="json_import_clear">Clear</string>
     <string name="json_import_next">Next</string>
     <string name="json_import_parsing">Parsing…</string>
@@ -147,6 +173,15 @@
     </plurals>
     <string name="detail_shuffle_questions">Shuffle questions</string>
     <string name="detail_shuffle_options">Shuffle options</string>
+    <string name="detail_continue_test">Continue last test</string>
+    <string name="detail_favorite">Favorite</string>
+    <string name="detail_stats_summary">Wrong %1$d · Favorites %2$d</string>
+    <string name="detail_practice_mode">Practice scope</string>
+    <string name="detail_practice_all">All questions (%1$d)</string>
+    <string name="detail_practice_wrong">Wrong only (%1$d)</string>
+    <string name="detail_practice_favorite">Favorites only (%1$d)</string>
+    <string name="detail_question_types">Question types</string>
+    <string name="detail_no_matching_questions">No questions match the current filters</string>
 
     <!-- Test Mode -->
     <string name="test_mode_title">Test Mode</string>
@@ -163,6 +198,14 @@
     <string name="test_wrong">Wrong</string>
     <string name="test_skipped">Skipped</string>
     <string name="test_retake">Retake Test</string>
+    <string name="test_answer_sheet">Answer sheet</string>
+    <string name="test_resume_title">Resume previous test?</string>
+    <string name="test_resume_message">An unfinished test was found. Continue where you left off?</string>
+    <string name="test_resume_continue">Continue</string>
+    <string name="test_resume_restart">Start over</string>
+    <string name="test_your_answer">Your answer</string>
+    <string name="test_blank_label">Blank %1$d</string>
+    <string name="test_reference_answer">Reference: %1$s</string>
     <plurals name="test_score_summary">
         <item quantity="one">%1$d of %2$d correct</item>
         <item quantity="other">%1$d of %2$d correct</item>
@@ -186,6 +229,9 @@
     <string name="settings_statistics">Statistics</string>
     <string name="settings_banks">Banks</string>
     <string name="settings_questions">Questions</string>
+    <string name="settings_attempts">Practice attempts</string>
+    <string name="settings_wrong_book">Wrong answers</string>
+    <string name="settings_favorites">Favorites</string>
     <string name="settings_data_management">Data Management</string>
     <string name="settings_local_db">Local Database</string>
     <string name="settings_local_db_desc">Delete all question banks and questions from your local storage.</string>
@@ -222,6 +268,7 @@
 
     <!-- General -->
     <string name="common_save">Save</string>
+    <string name="common_close">Close</string>
     <string name="migration_error">Database migration failed: %1$s. Please restart the app.</string>
     <string name="migration_error_title">Data Migration Error</string>
     <string name="common_delete">Delete</string>

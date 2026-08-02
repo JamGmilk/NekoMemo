@@ -32,6 +32,8 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Card
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -99,6 +101,7 @@ fun FetcherScreen(
     val parseResult = uiState.parseResult
     val currentUrl = uiState.currentUrl.ifBlank { "https://i.chaoxing.com" }
     val navigateToExtract = uiState.navigateToExtract
+    val isGuideDismissed by viewModel.isGuideDismissed.collectAsStateWithLifecycle()
 
     var showHtmlSheet by rememberSaveable { mutableStateOf(false) }
     var htmlContent by rememberSaveable { mutableStateOf("") }
@@ -385,6 +388,31 @@ fun FetcherScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Column(modifier = Modifier.fillMaxSize()) {
+                if (!isGuideDismissed) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        shape = AppShapes.large
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = stringResource(R.string.fetcher_guide_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(stringResource(R.string.fetcher_guide_step1))
+                            Text(stringResource(R.string.fetcher_guide_step2))
+                            Text(stringResource(R.string.fetcher_guide_step3))
+                            Button(
+                                onClick = viewModel::dismissGuide,
+                                modifier = Modifier.align(Alignment.End).padding(top = 8.dp)
+                            ) {
+                                Text(stringResource(R.string.fetcher_guide_dismiss))
+                            }
+                        }
+                    }
+                }
                 if (isLoading) {
                     LinearProgressIndicator(
                         progress = { loadProgress.toFloat() / 100f },

@@ -91,20 +91,19 @@ fun JsonImportScreen(
     }
 
     val fileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let { selectedUri ->
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
             scope.launch {
-                val result = withContext(Dispatchers.IO) {
-                    validateAndReadFile(context, selectedUri)
+                val results = withContext(Dispatchers.IO) {
+                    uris.map { validateAndReadFile(context, it) }
                 }
-                when (result) {
-                    is FileReadResult.Success -> {
-                        viewModel.setJsonText(result.content)
-                    }
-                    is FileReadResult.Error -> {
-                        viewModel.showSnackbar(result.message)
-                    }
+                val contents = results.filterIsInstance<FileReadResult.Success>().map { it.content }
+                if (contents.isNotEmpty()) {
+                    viewModel.parseFiles(contents)
+                }
+                results.filterIsInstance<FileReadResult.Error>().firstOrNull()?.let {
+                    viewModel.showSnackbar(it.message)
                 }
             }
         }
@@ -227,7 +226,7 @@ fun JsonImportScreen(
                 }
                 OutlinedButton(
                     onClick = {
-                        fileLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                        fileLauncher.launch(arrayOf("application/json", "text/*"))
                     },
                     modifier = Modifier.weight(1f),
                     shape = ButtonShapes
@@ -239,6 +238,46 @@ fun JsonImportScreen(
             }
 
             val errorMessage = uiState.errorMessage
+            if (uiState.batchJson.size > 1) {
+                androidx.compose.material3.Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    shape = AppShapes.large
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.json_import_batch_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.json_import_batch_summary,
+                                uiState.batchJson.size,
+                                uiState.batchFailedCount
+                            ),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Row(
+                            modifier = Modifier.padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { viewModel.previewFirstBatch() },
+                                enabled = !uiState.isParsing
+                            ) {
+                                Text(stringResource(R.string.json_import_batch_open_first))
+                            }
+                            Button(
+                                onClick = { viewModel.saveAllBatch() },
+                                enabled = !uiState.isParsing
+                            ) {
+                                Text(stringResource(R.string.json_import_batch_save_all))
+                            }
+                        }
+                    }
+                }
+            }
             OutlinedTextField(
                 value = uiState.jsonText,
                 onValueChange = { viewModel.setJsonText(it) },

@@ -1,0 +1,90 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "e89c2b58e3e95a595d3d6df3b8e00882",
+    "entities": [
+      {
+        "tableName": "question_banks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `categoryId` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {"fieldPath":"id","columnName":"id","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"title","columnName":"title","affinity":"TEXT","notNull":true},
+          {"fieldPath":"categoryId","columnName":"categoryId","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"createdAt","columnName":"createdAt","affinity":"INTEGER","notNull":true}
+        ],
+        "primaryKey":{"autoGenerate":true,"columnNames":["id"]},
+        "indices":[
+          {"name":"index_question_banks_createdAt","unique":false,"columnNames":["createdAt"],"orders":[],"createSql":"CREATE INDEX IF NOT EXISTS `index_question_banks_createdAt` ON `${TABLE_NAME}` (`createdAt`)"},
+          {"name":"index_question_banks_categoryId","unique":false,"columnNames":["categoryId"],"orders":[],"createSql":"CREATE INDEX IF NOT EXISTS `index_question_banks_categoryId` ON `${TABLE_NAME}` (`categoryId`)"}
+        ],
+        "foreignKeys":[{"table":"categories","onDelete":"RESTRICT","onUpdate":"NO ACTION","columns":["categoryId"],"referencedColumns":["id"]}]
+      },
+      {
+        "tableName": "questions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `questionBankId` INTEGER NOT NULL, `text` TEXT NOT NULL, `options` TEXT NOT NULL, `correctIndices` TEXT NOT NULL, `type` INTEGER NOT NULL, `isFavorite` INTEGER NOT NULL, FOREIGN KEY(`questionBankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {"fieldPath":"id","columnName":"id","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"questionBankId","columnName":"questionBankId","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"text","columnName":"text","affinity":"TEXT","notNull":true},
+          {"fieldPath":"options","columnName":"options","affinity":"TEXT","notNull":true},
+          {"fieldPath":"correctIndices","columnName":"correctIndices","affinity":"TEXT","notNull":true},
+          {"fieldPath":"type","columnName":"type","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"isFavorite","columnName":"isFavorite","affinity":"INTEGER","notNull":true}
+        ],
+        "primaryKey":{"autoGenerate":true,"columnNames":["id"]},
+        "indices":[{"name":"index_questions_questionBankId","unique":false,"columnNames":["questionBankId"],"orders":[],"createSql":"CREATE INDEX IF NOT EXISTS `index_questions_questionBankId` ON `${TABLE_NAME}` (`questionBankId`)"}],
+        "foreignKeys":[{"table":"question_banks","onDelete":"CASCADE","onUpdate":"NO ACTION","columns":["questionBankId"],"referencedColumns":["id"]}]
+      },
+      {
+        "tableName": "categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL)",
+        "fields": [
+          {"fieldPath":"id","columnName":"id","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"name","columnName":"name","affinity":"TEXT","notNull":true}
+        ],
+        "primaryKey":{"autoGenerate":true,"columnNames":["id"]},
+        "indices":[{"name":"index_categories_name","unique":true,"columnNames":["name"],"orders":[],"createSql":"CREATE UNIQUE INDEX IF NOT EXISTS `index_categories_name` ON `${TABLE_NAME}` (`name`)"}]
+      },
+      {
+        "tableName": "question_stats",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`questionId` INTEGER NOT NULL, `attemptCount` INTEGER NOT NULL, `correctCount` INTEGER NOT NULL, `wrongCount` INTEGER NOT NULL, `lastPracticedAt` INTEGER NOT NULL, `inWrongBook` INTEGER NOT NULL, PRIMARY KEY(`questionId`), FOREIGN KEY(`questionId`) REFERENCES `questions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {"fieldPath":"questionId","columnName":"questionId","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"attemptCount","columnName":"attemptCount","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"correctCount","columnName":"correctCount","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"wrongCount","columnName":"wrongCount","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"lastPracticedAt","columnName":"lastPracticedAt","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"inWrongBook","columnName":"inWrongBook","affinity":"INTEGER","notNull":true}
+        ],
+        "primaryKey":{"autoGenerate":false,"columnNames":["questionId"]},
+        "indices":[],
+        "foreignKeys":[{"table":"questions","onDelete":"CASCADE","onUpdate":"NO ACTION","columns":["questionId"],"referencedColumns":["id"]}]
+      },
+      {
+        "tableName": "test_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bankId` INTEGER NOT NULL, `questionIdsJson` TEXT NOT NULL, `currentIndex` INTEGER NOT NULL, `selectedAnswersJson` TEXT NOT NULL, `textAnswersJson` TEXT NOT NULL, `revealedJson` TEXT NOT NULL, `shuffleQuestions` INTEGER NOT NULL, `shuffleOptions` INTEGER NOT NULL, `practiceMode` TEXT NOT NULL, `typesFilter` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`bankId`), FOREIGN KEY(`bankId`) REFERENCES `question_banks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {"fieldPath":"bankId","columnName":"bankId","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"questionIdsJson","columnName":"questionIdsJson","affinity":"TEXT","notNull":true},
+          {"fieldPath":"currentIndex","columnName":"currentIndex","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"selectedAnswersJson","columnName":"selectedAnswersJson","affinity":"TEXT","notNull":true},
+          {"fieldPath":"textAnswersJson","columnName":"textAnswersJson","affinity":"TEXT","notNull":true},
+          {"fieldPath":"revealedJson","columnName":"revealedJson","affinity":"TEXT","notNull":true},
+          {"fieldPath":"shuffleQuestions","columnName":"shuffleQuestions","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"shuffleOptions","columnName":"shuffleOptions","affinity":"INTEGER","notNull":true},
+          {"fieldPath":"practiceMode","columnName":"practiceMode","affinity":"TEXT","notNull":true},
+          {"fieldPath":"typesFilter","columnName":"typesFilter","affinity":"TEXT","notNull":true},
+          {"fieldPath":"updatedAt","columnName":"updatedAt","affinity":"INTEGER","notNull":true}
+        ],
+        "primaryKey":{"autoGenerate":false,"columnNames":["bankId"]},
+        "indices":[],
+        "foreignKeys":[{"table":"question_banks","onDelete":"CASCADE","onUpdate":"NO ACTION","columns":["bankId"],"referencedColumns":["id"]}]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e89c2b58e3e95a595d3d6df3b8e00882')"
+    ]
+  }
+}

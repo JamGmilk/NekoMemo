@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mirujam.nekomemo.R
+import mirujam.nekomemo.data.repository.CategoryRepository
+import mirujam.nekomemo.data.repository.QuestionRepository
 import mirujam.nekomemo.domain.model.ExtractedQuestion
 import mirujam.nekomemo.domain.model.ExtractedQuestionBank
 import mirujam.nekomemo.domain.model.ExtractedQuestionBankSerializer
 import mirujam.nekomemo.domain.model.QuestionType
+import mirujam.nekomemo.domain.model.Question
+import mirujam.nekomemo.domain.model.QuestionBank
 import mirujam.nekomemo.domain.validator.DataValidator
 import mirujam.nekomemo.ui.model.UiText
 import mirujam.nekomemo.ui.shared.SharedDataStore
@@ -23,7 +27,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class JsonImportViewModel @Inject constructor(
-    private val sharedDataStore: SharedDataStore
+    private val sharedDataStore: SharedDataStore,
+    private val repository: QuestionRepository,
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
     /** 文本输入大小上限（2MB），与 Screen 端一致，防止 TextField 渲染 ANR */
@@ -34,7 +40,9 @@ class JsonImportViewModel @Inject constructor(
         val isParsing: Boolean = false,
         val errorMessage: UiText? = null,
         val snackbarMessage: UiText? = null,
-        val navigateToExtract: Boolean = false
+        val navigateToExtract: Boolean = false,
+        val batchJson: List<String> = emptyList(),
+        val batchFailedCount: Int = 0
     )
 
     private val _uiState = MutableStateFlow(JsonImportUiState())
@@ -61,6 +69,80 @@ class JsonImportViewModel @Inject constructor(
 
     fun onNavigatedToExtract() {
         _uiState.value = _uiState.value.copy(navigateToExtract = false)
+    }
+
+    fun parseFiles(contents: List<String>) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isParsing = true, errorMessage = null)
+            val parsed = withContext(Dispatchers.Default) { contents.mapNotNull { parseAndNormalize(it) } }
+            val failedCount = contents.size - parsed.size
+            _uiState.value = _uiState.value.copy(
+                isParsing = false,
+                batchJson = parsed,
+                batchFailedCount = failedCount,
+                snackbarMessage = if (contents.size == 1 && parsed.isEmpty()) {
+                    UiText.StringResource(R.string.json_import_error_invalid)
+                } else {
+                    null
+                }
+            )
+            if (contents.size == 1 && parsed.size == 1) {
+                setJsonText(contents.first())
+            }
+        }
+    }
+
+    fun previewFirstBatch() {
+        val first = _uiState.value.batchJson.firstOrNull() ?: return
+        viewModelScope.launch {
+            sharedDataStore.setExtractedJson(first)
+            _uiState.value = _uiState.value.copy(navigateToExtract = true)
+        }
+    }
+
+    fun saveAllBatch() {
+        val batch = _uiState.value.batchJson
+        if (batch.isEmpty()) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isParsing = true)
+            try {
+                categoryRepository.ensureDefaultCategory()
+                val categoryId = categoryRepository.getCategoryByName(
+                    mirujam.nekomemo.domain.model.Category.DEFAULT_CATEGORY_NAME
+                )?.id ?: 1L
+                var saved = 0
+                batch.forEach { json ->
+                    val bank = ExtractedQuestionBankSerializer.fromJson(json) ?: return@forEach
+                    val questions = bank.questions.map { question ->
+                        Question(
+                            questionBankId = 0,
+                            text = question.content,
+                            options = question.options,
+                            correctIndices = question.correctIndices,
+                            type = question.type
+                        )
+                    }
+                    if (questions.isNotEmpty()) {
+                        repository.createBankWithQuestions(
+                            QuestionBank(title = bank.name.ifBlank { "Imported Bank" }, categoryId = categoryId),
+                            questions
+                        )
+                        saved++
+                    }
+                }
+                _uiState.value = _uiState.value.copy(
+                    isParsing = false,
+                    batchJson = emptyList(),
+                    snackbarMessage = UiText.StringResource(R.string.json_import_batch_saved, arrayOf(saved))
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to save batch import")
+                _uiState.value = _uiState.value.copy(
+                    isParsing = false,
+                    snackbarMessage = UiText.StringResource(R.string.json_import_error_invalid)
+                )
+            }
+        }
     }
 
     /**

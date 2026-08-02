@@ -40,6 +40,16 @@
         <item quantity="other">%1$d 道题目</item>
     </plurals>
     <string name="library_more_options">更多选项</string>
+    <string name="library_merge">合并到…</string>
+    <string name="library_merge_title">合并题库</string>
+    <string name="library_merge_message">将「%1$s」中的题目追加到目标题库。</string>
+    <string name="library_merge_delete_source">合并后删除源题库</string>
+    <string name="library_merge_success">题库已合并</string>
+    <string name="library_merge_failed">合并失败</string>
+    <string name="library_mastery">掌握度 %1$d%%</string>
+    <string name="library_mastery_none">尚未练习</string>
+    <string name="library_wrong_badge">错题 %1$d</string>
+    <string name="library_practice_wrong">练错题</string>
     <string name="library_filter_all">全部</string>
     <string name="library_filter_by_category">按分类筛选</string>
     <string name="library_sort_and_filter">排序与筛选</string>
@@ -55,6 +65,12 @@
     <string name="fetcher_zoom_out">缩小</string>
     <string name="fetcher_zoom_in">放大</string>
     <string name="fetcher_extract">提取</string>
+    <string name="fetcher_guide_title">如何抓取题目</string>
+    <string name="fetcher_guide_step1">1. 登录学习通账号</string>
+    <string name="fetcher_guide_step2">2. 打开课程的作业/考试详情页</string>
+    <string name="fetcher_guide_step3">3. 点击右下角「提取」按钮</string>
+    <string name="fetcher_guide_dismiss">知道了</string>
+    <string name="fetcher_error_no_questions_hint">未找到题目。请确认当前页面是作业或考试详情页。</string>
     <string name="fetcher_save_failed">保存提取的数据失败</string>
     <string name="fetcher_error_empty_html">错误：HTML 内容为空</string>
     <string name="fetcher_error_page_too_large">错误：页面过大（%1$.1fMB）。请尝试更小的页面。</string>
@@ -80,6 +96,10 @@
     </plurals>
     <string name="extract_save_to_library">保存到题库</string>
     <string name="extract_save_dialog_title">保存题库</string>
+    <string name="extract_save_mode_new">新建题库</string>
+    <string name="extract_save_mode_append">追加到已有题库</string>
+    <string name="extract_save_select_bank">选择目标题库</string>
+    <string name="extract_append_success">已追加 %1$d 道题</string>
     <plurals name="extract_save_success">
         <item quantity="other">已保存 %1$d 道题</item>
     </plurals>
@@ -97,6 +117,12 @@
     <string name="json_import_text_placeholder">在此粘贴或输入 JSON 内容…</string>
     <string name="json_import_paste">粘贴</string>
     <string name="json_import_select_file">选择文件</string>
+    <string name="json_import_select_files">选择多个文件</string>
+    <string name="json_import_batch_title">批量导入</string>
+    <string name="json_import_batch_summary">成功解析 %1$d 个文件，失败 %2$d 个</string>
+    <string name="json_import_batch_save_all">全部保存为新题库</string>
+    <string name="json_import_batch_open_first">预览第一个</string>
+    <string name="json_import_batch_saved">已保存 %1$d 个题库</string>
     <string name="json_import_clear">清空</string>
     <string name="json_import_next">下一步</string>
     <string name="json_import_parsing">正在解析…</string>
@@ -138,6 +164,15 @@
     </plurals>
     <string name="detail_shuffle_questions">打乱题目</string>
     <string name="detail_shuffle_options">打乱选项</string>
+    <string name="detail_continue_test">继续上次测试</string>
+    <string name="detail_favorite">收藏</string>
+    <string name="detail_stats_summary">错题 %1$d · 收藏 %2$d</string>
+    <string name="detail_practice_mode">练习范围</string>
+    <string name="detail_practice_all">全部题目（%1$d）</string>
+    <string name="detail_practice_wrong">仅错题（%1$d）</string>
+    <string name="detail_practice_favorite">仅收藏（%1$d）</string>
+    <string name="detail_question_types">题型筛选</string>
+    <string name="detail_no_matching_questions">当前条件下没有可测题目</string>
 
     <!-- Test Mode -->
     <string name="test_mode_title">测试模式</string>
@@ -154,6 +189,14 @@
     <string name="test_wrong">错误</string>
     <string name="test_skipped">已跳过</string>
     <string name="test_retake">重新测试</string>
+    <string name="test_answer_sheet">答题卡</string>
+    <string name="test_resume_title">继续上次测试？</string>
+    <string name="test_resume_message">检测到未完成的测试，是否继续？</string>
+    <string name="test_resume_continue">继续</string>
+    <string name="test_resume_restart">重新开始</string>
+    <string name="test_your_answer">你的答案</string>
+    <string name="test_blank_label">第 %1$d 空</string>
+    <string name="test_reference_answer">参考答案：%1$s</string>
     <plurals name="test_score_summary">
         <item quantity="other">正确率：%1$d / %2$d</item>
     </plurals>
@@ -176,6 +219,9 @@
     <string name="settings_statistics">统计</string>
     <string name="settings_banks">题库数量</string>
     <string name="settings_questions">题目总量</string>
+    <string name="settings_attempts">练习次数</string>
+    <string name="settings_wrong_book">错题数量</string>
+    <string name="settings_favorites">收藏数量</string>
     <string name="settings_data_management">数据</string>
     <string name="settings_local_db">本地数据库</string>
     <string name="settings_local_db_desc">清空本地存储的所有题库和题目</string>
@@ -212,6 +258,7 @@
 
     <!-- General -->
     <string name="common_save">保存</string>
+    <string name="common_close">关闭</string>
     <string name="migration_error">数据库迁移失败：%1$s。请重启应用。</string>
     <string name="migration_error_title">数据迁移错误</string>
     <string name="common_delete">删除</string>
